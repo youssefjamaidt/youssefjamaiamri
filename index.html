@@ -1,0 +1,2711 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SwimAnalytics Pro - Gestion d'Équipe de Natation</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary-color: #1a73e8;
+            --secondary-color: #34a853;
+            --accent-color: #4285f4;
+            --warning-color: #fbbc05;
+            --danger-color: #ea4335;
+            --light-bg: #f8f9fa;
+            --dark-bg: #202124;
+            --sidebar-bg: #2d2e31;
+            --card-bg: #ffffff;
+            --text-primary: #202124;
+            --text-secondary: #5f6368;
+        }
+        
+        [data-theme="dark"] {
+            --light-bg: #202124;
+            --card-bg: #2d2e31;
+            --text-primary: #e8eaed;
+            --text-secondary: #9aa0a6;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--light-bg);
+            color: var(--text-primary);
+            transition: all 0.3s;
+        }
+        
+        .sidebar {
+            background-color: var(--sidebar-bg);
+            color: white;
+            height: 100vh;
+            position: fixed;
+            padding-top: 20px;
+            overflow-y: auto;
+            z-index: 1000;
+        }
+        
+        .sidebar a {
+            color: #e8eaed;
+            text-decoration: none;
+            display: block;
+            padding: 12px 20px;
+            margin: 5px 0;
+            border-radius: 5px;
+            transition: all 0.3s;
+            font-weight: 500;
+        }
+        
+        .sidebar a:hover, .sidebar a.active {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        
+        .sidebar a i {
+            margin-right: 10px;
+            width: 20px;
+            text-align: center;
+        }
+        
+        .main-content {
+            margin-left: 250px;
+            padding: 20px;
+        }
+        
+        .dashboard-card {
+            background: var(--card-bg);
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            margin-bottom: 20px;
+            transition: transform 0.3s;
+            border: 1px solid rgba(0,0,0,0.05);
+        }
+        
+        .dashboard-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+        }
+        
+        .card-title {
+            color: var(--primary-color);
+            font-weight: 600;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .card-title i {
+            margin-right: 10px;
+        }
+        
+        .stats-card {
+            text-align: center;
+            padding: 20px 15px;
+        }
+        
+        .stats-value {
+            font-size: 2.2rem;
+            font-weight: bold;
+            color: var(--primary-color);
+            margin-bottom: 5px;
+        }
+        
+        .stats-label {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+        
+        .stats-change {
+            font-size: 0.8rem;
+            margin-top: 5px;
+        }
+        
+        .positive {
+            color: var(--secondary-color);
+        }
+        
+        .negative {
+            color: var(--danger-color);
+        }
+        
+        .nav-tabs .nav-link.active {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+        }
+        
+        .nav-tabs .nav-link {
+            color: var(--primary-color);
+        }
+        
+        .btn-primary {
+            background-color: var(--primary-color);
+            border: none;
+        }
+        
+        .btn-primary:hover {
+            background-color: #0d62c9;
+        }
+        
+        .swimmer-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid var(--primary-color);
+        }
+        
+        .progress-bar {
+            background-color: var(--primary-color);
+        }
+        
+        .table th {
+            background-color: rgba(0,0,0,0.03);
+            color: var(--text-primary);
+        }
+        
+        .table {
+            color: var(--text-primary);
+        }
+        
+        .performance-chart {
+            height: 300px;
+        }
+        
+        .group-selector {
+            background-color: var(--card-bg);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        
+        .alert-card {
+            border-left: 4px solid;
+        }
+        
+        .alert-warning {
+            border-left-color: var(--warning-color);
+        }
+        
+        .alert-danger {
+            border-left-color: var(--danger-color);
+        }
+        
+        .alert-info {
+            border-left-color: var(--accent-color);
+        }
+        
+        .badge {
+            font-weight: 500;
+        }
+        
+        .theme-toggle {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 1.2rem;
+            cursor: pointer;
+        }
+        
+        .fitness-indicator {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .fitness-label {
+            width: 100px;
+            font-size: 0.9rem;
+        }
+        
+        .fitness-bar {
+            flex-grow: 1;
+            height: 10px;
+            background-color: #e0e0e0;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        
+        .fitness-value {
+            width: 40px;
+            text-align: right;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+        
+        .fitness-fill {
+            height: 100%;
+            border-radius: 5px;
+        }
+        
+        .load-low {
+            background-color: var(--secondary-color);
+        }
+        
+        .load-medium {
+            background-color: var(--warning-color);
+        }
+        
+        .load-high {
+            background-color: var(--danger-color);
+        }
+        
+        @media (max-width: 768px) {
+            .sidebar {
+                height: auto;
+                position: relative;
+            }
+            
+            .main-content {
+                margin-left: 0;
+            }
+        }
+        
+        .page {
+            display: none;
+        }
+        
+        .page.active {
+            display: block;
+            animation: fadeIn 0.5s;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        .modal-content {
+            border-radius: 10px;
+            border: none;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        
+        .form-label {
+            font-weight: 500;
+            margin-bottom: 5px;
+        }
+        
+        .swimmer-avatar-large {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 4px solid var(--primary-color);
+        }
+        
+        .notification-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background-color: var(--danger-color);
+            color: white;
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            font-size: 0.7rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .notification-item {
+            position: relative;
+        }
+        
+        .wellness-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 5px;
+        }
+        
+        .wellness-good {
+            background-color: var(--secondary-color);
+        }
+        
+        .wellness-average {
+            background-color: var(--warning-color);
+        }
+        
+        .wellness-poor {
+            background-color: var(--danger-color);
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-secondary);
+        }
+        
+        .empty-state i {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            color: var(--text-secondary);
+        }
+    </style>
+</head>
+<body>
+    <!-- Modals -->
+    <!-- Add Swimmer Modal -->
+    <div class="modal fade" id="addSwimmerModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Ajouter un nageur</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="addSwimmerForm">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="swimmerFirstName" class="form-label">Prénom</label>
+                                    <input type="text" class="form-control" id="swimmerFirstName" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="swimmerLastName" class="form-label">Nom</label>
+                                    <input type="text" class="form-control" id="swimmerLastName" required>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="swimmerBirthdate" class="form-label">Date de naissance</label>
+                                    <input type="date" class="form-control" id="swimmerBirthdate" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="swimmerGender" class="form-label">Genre</label>
+                                    <select class="form-select" id="swimmerGender" required>
+                                        <option value="">Sélectionner</option>
+                                        <option value="M">Masculin</option>
+                                        <option value="F">Féminin</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="swimmerGroup" class="form-label">Groupe</label>
+                                    <select class="form-select" id="swimmerGroup" required>
+                                        <option value="">Sélectionner un groupe</option>
+                                        <option value="A">Groupe A - Élite Compétition</option>
+                                        <option value="B">Groupe B - Perfectionnement</option>
+                                        <option value="C">Groupe C - Débutants</option>
+                                        <option value="D">Groupe D - Jeunes Espoirs</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="swimmerSpecialty" class="form-label">Spécialité principale</label>
+                                    <select class="form-select" id="swimmerSpecialty" required>
+                                        <option value="">Sélectionner</option>
+                                        <option value="crawl">Nage libre</option>
+                                        <option value="dos">Dos</option>
+                                        <option value="brasse">Brasse</option>
+                                        <option value="papillon">Papillon</option>
+                                        <option value="4nages">4 nages</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="swimmerEmail" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="swimmerEmail">
+                        </div>
+                        <div class="mb-3">
+                            <label for="swimmerPhone" class="form-label">Téléphone</label>
+                            <input type="tel" class="form-control" id="swimmerPhone">
+                        </div>
+                        <div class="mb-3">
+                            <label for="swimmerAddress" class="form-label">Adresse</label>
+                            <textarea class="form-control" id="swimmerAddress" rows="2"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="button" class="btn btn-primary" id="saveSwimmerBtn">Enregistrer</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Group Modal -->
+    <div class="modal fade" id="addGroupModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Ajouter un groupe</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="addGroupForm">
+                        <div class="mb-3">
+                            <label for="groupName" class="form-label">Nom du groupe</label>
+                            <input type="text" class="form-control" id="groupName" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="groupCoach" class="form-label">Entraîneur responsable</label>
+                            <input type="text" class="form-control" id="groupCoach" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="groupLevel" class="form-label">Niveau</label>
+                            <select class="form-select" id="groupLevel" required>
+                                <option value="">Sélectionner</option>
+                                <option value="debutant">Débutant</option>
+                                <option value="perfectionnement">Perfectionnement</option>
+                                <option value="competition">Compétition</option>
+                                <option value="elite">Élite</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="groupSchedule" class="form-label">Horaires d'entraînement</label>
+                            <textarea class="form-control" id="groupSchedule" rows="3" required></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label for="groupObjectives" class="form-label">Objectifs</label>
+                            <textarea class="form-control" id="groupObjectives" rows="3"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="button" class="btn btn-primary" id="saveGroupBtn">Enregistrer</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Competition Modal -->
+    <div class="modal fade" id="addCompetitionModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Ajouter une compétition</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="addCompetitionForm">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="competitionName" class="form-label">Nom de la compétition</label>
+                                    <input type="text" class="form-control" id="competitionName" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="competitionLevel" class="form-label">Niveau</label>
+                                    <select class="form-select" id="competitionLevel" required>
+                                        <option value="">Sélectionner</option>
+                                        <option value="local">Local</option>
+                                        <option value="regional">Régional</option>
+                                        <option value="national">National</option>
+                                        <option value="international">International</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="competitionStartDate" class="form-label">Date de début</label>
+                                    <input type="date" class="form-control" id="competitionStartDate" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="competitionEndDate" class="form-label">Date de fin</label>
+                                    <input type="date" class="form-control" id="competitionEndDate" required>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="competitionLocation" class="form-label">Lieu</label>
+                            <input type="text" class="form-control" id="competitionLocation" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="competitionDescription" class="form-label">Description</label>
+                            <textarea class="form-control" id="competitionDescription" rows="3"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Nageurs engagés</label>
+                            <div id="swimmersSelection">
+                                <!-- Will be populated dynamically -->
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="button" class="btn btn-primary" id="saveCompetitionBtn">Enregistrer</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Application -->
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <div class="col-md-3 col-lg-2 sidebar d-md-block">
+                <div class="text-center mb-4">
+                    <h4><i class="fas fa-swimming-pool"></i> SwimAnalytics</h4>
+                    <p class="text-muted">Gestion d'équipe professionnelle</p>
+                </div>
+                
+                <ul class="nav flex-column">
+                    <li><a href="#" class="nav-link active" data-page="dashboard"><i class="fas fa-tachometer-alt"></i> Tableau de bord</a></li>
+                    <li><a href="#" class="nav-link" data-page="groups"><i class="fas fa-users"></i> Groupes</a></li>
+                    <li><a href="#" class="nav-link" data-page="swimmers"><i class="fas fa-user"></i> Nageurs</a></li>
+                    <li><a href="#" class="nav-link" data-page="technical-sheets"><i class="fas fa-clipboard-list"></i> Fiches techniques</a></li>
+                    <li><a href="#" class="nav-link" data-page="daily-monitoring"><i class="fas fa-chart-line"></i> Suivi quotidien</a></li>
+                    <li><a href="#" class="nav-link" data-page="performance"><i class="fas fa-trophy"></i> Performances</a></li>
+                    <li><a href="#" class="nav-link" data-page="physical-condition"><i class="fas fa-dumbbell"></i> État physique</a></li>
+                    <li><a href="#" class="nav-link notification-item" data-page="absences"><i class="fas fa-calendar-times"></i> Absences <span class="notification-badge" id="absenceBadge">0</span></a></li>
+                    <li><a href="#" class="nav-link" data-page="competitions"><i class="fas fa-flag-checkered"></i> Compétitions</a></li>
+                    <li><a href="#" class="nav-link" data-page="settings"><i class="fas fa-cog"></i> Paramètres</a></li>
+                </ul>
+                
+                <div class="mt-4 p-3" style="background-color: rgba(255,255,255,0.1); border-radius: 8px;">
+                    <h6 class="text-white">Aide & Support</h6>
+                    <p class="small text-muted">Consultez notre documentation pour optimiser l'utilisation de l'application.</p>
+                    <button class="btn btn-sm btn-outline-light w-100" id="helpBtn"><i class="fas fa-question-circle"></i> Centre d'aide</button>
+                </div>
+            </div>
+            
+            <!-- Main Content -->
+            <div class="col-md-9 col-lg-10 main-content">
+                <!-- Dashboard Page -->
+                <div class="page active" id="dashboard">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <div>
+                            <h2>Tableau de Bord</h2>
+                            <p class="text-muted mb-0">Surveillance et analyse des performances de l'équipe</p>
+                        </div>
+                        <div class="d-flex align-items-center">
+                            <button class="theme-toggle me-3" id="themeToggle">
+                                <i class="fas fa-moon"></i>
+                            </button>
+                            <div class="btn-group">
+                                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addSwimmerModal"><i class="fas fa-plus"></i> Ajouter un nageur</button>
+                                <button class="btn btn-outline-primary" id="exportDataBtn"><i class="fas fa-download"></i> Exporter</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Group Selector -->
+                    <div class="group-selector">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <label for="groupSelect" class="form-label">Sélectionner un groupe</label>
+                                <select class="form-select" id="groupSelect">
+                                    <option value="all">Tous les groupes</option>
+                                    <option value="A" selected>Groupe A - Élite Compétition</option>
+                                    <option value="B">Groupe B - Perfectionnement</option>
+                                    <option value="C">Groupe C - Débutants</option>
+                                    <option value="D">Groupe D - Jeunes Espoirs</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="dateRange" class="form-label">Période d'analyse</label>
+                                <input type="text" class="form-control" id="dateRange" value="01/01/2023 - 31/12/2023">
+                            </div>
+                            <div class="col-md-4">
+                                <label for="metricSelect" class="form-label">Métrique principale</label>
+                                <select class="form-select" id="metricSelect">
+                                    <option selected>Charge d'entraînement</option>
+                                    <option>Performance</option>
+                                    <option>Bien-être</option>
+                                    <option>Présence</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Stats Cards -->
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="dashboard-card stats-card">
+                                <div class="stats-value" id="totalSwimmers">0</div>
+                                <div class="stats-label">Nageurs actifs</div>
+                                <div class="stats-change positive"><i class="fas fa-arrow-up"></i> +2 depuis le mois dernier</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="dashboard-card stats-card">
+                                <div class="stats-value">85%</div>
+                                <div class="stats-label">Présence moyenne</div>
+                                <div class="stats-change negative"><i class="fas fa-arrow-down"></i> -3% vs. dernier mois</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="dashboard-card stats-card">
+                                <div class="stats-value">42h</div>
+                                <div class="stats-label">Volume d'entraînement/sem.</div>
+                                <div class="stats-change positive"><i class="fas fa-arrow-up"></i> +5h vs. dernier mois</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="dashboard-card stats-card">
+                                <div class="stats-value" id="upcomingCompetitions">0</div>
+                                <div class="stats-label">Compétitions à venir</div>
+                                <div class="stats-change positive"><i class="fas fa-arrow-up"></i> +3 vs. dernier mois</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Charts and Main Content -->
+                    <div class="row">
+                        <!-- Left Column -->
+                        <div class="col-md-8">
+                            <!-- Volume d'entraînement et charge -->
+                            <div class="dashboard-card">
+                                <h5 class="card-title"><i class="fas fa-chart-bar"></i> Volume d'entraînement et charge hebdomadaire</h5>
+                                <div class="performance-chart">
+                                    <canvas id="trainingVolumeChart"></canvas>
+                                </div>
+                            </div>
+                            
+                            <!-- Analyse des moyennes de groupe -->
+                            <div class="dashboard-card">
+                                <h5 class="card-title"><i class="fas fa-chart-line"></i> Analyse des moyennes de groupe</h5>
+                                <div class="performance-chart">
+                                    <canvas id="groupAverageChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Right Column -->
+                        <div class="col-md-4">
+                            <!-- Alertes de fatigue et charge -->
+                            <div class="dashboard-card">
+                                <h5 class="card-title"><i class="fas fa-exclamation-triangle"></i> Alertes de monitoring</h5>
+                                <div id="alertsContainer">
+                                    <!-- Alerts will be populated dynamically -->
+                                </div>
+                            </div>
+                            
+                            <!-- Indicateurs de charge d'entraînement -->
+                            <div class="dashboard-card">
+                                <h5 class="card-title"><i class="fas fa-weight-hanging"></i> Charge d'entraînement - Groupe A</h5>
+                                <div class="fitness-indicator">
+                                    <div class="fitness-label">Charge aiguë</div>
+                                    <div class="fitness-bar">
+                                        <div class="fitness-fill load-high" style="width: 85%"></div>
+                                    </div>
+                                    <div class="fitness-value">85%</div>
+                                </div>
+                                <div class="fitness-indicator">
+                                    <div class="fitness-label">Charge chronique</div>
+                                    <div class="fitness-bar">
+                                        <div class="fitness-fill load-medium" style="width: 65%"></div>
+                                    </div>
+                                    <div class="fitness-value">65%</div>
+                                </div>
+                                <div class="fitness-indicator">
+                                    <div class="fitness-label">Ratio ACWR</div>
+                                    <div class="fitness-bar">
+                                        <div class="fitness-fill load-high" style="width: 130%"></div>
+                                    </div>
+                                    <div class="fitness-value">1.3</div>
+                                </div>
+                                <div class="mt-3">
+                                    <small class="text-muted">ACWR: Acute Chronic Workload Ratio - Zone optimale: 0.8-1.3</small>
+                                </div>
+                            </div>
+                            
+                            <!-- Prochaines compétitions -->
+                            <div class="dashboard-card">
+                                <h5 class="card-title"><i class="fas fa-flag-checkered"></i> Prochaines compétitions</h5>
+                                <div id="upcomingCompetitionsList">
+                                    <!-- Competitions will be populated dynamically -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Tableau des nageurs -->
+                    <div class="dashboard-card">
+                        <h5 class="card-title"><i class="fas fa-users"></i> Liste des nageurs - Groupe A</h5>
+                        
+                        <ul class="nav nav-tabs" id="swimmerTabs" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active" id="all-tab" data-bs-toggle="tab" data-bs-target="#all" type="button" role="tab">Tous les nageurs</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="performance-tab" data-bs-toggle="tab" data-bs-target="#performance" type="button" role="tab">Suivi performances</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="physical-tab" data-bs-toggle="tab" data-bs-target="#physical" type="button" role="tab">État physique</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="load-tab" data-bs-toggle="tab" data-bs-target="#load" type="button" role="tab">Charge d'entraînement</button>
+                            </li>
+                        </ul>
+                        
+                        <div class="tab-content mt-3" id="swimmerTabsContent">
+                            <div class="tab-pane fade show active" id="all" role="tabpanel">
+                                <div class="table-responsive">
+                                    <table class="table table-hover" id="swimmersTable">
+                                        <thead>
+                                            <tr>
+                                                <th>Nageur</th>
+                                                <th>Âge</th>
+                                                <th>Spécialité</th>
+                                                <th>Présence</th>
+                                                <th>Bien-être</th>
+                                                <th>Charge</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="swimmersTableBody">
+                                            <!-- Swimmers will be populated dynamically -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            
+                            <div class="tab-pane fade" id="performance" role="tabpanel">
+                                <div class="empty-state">
+                                    <i class="fas fa-trophy"></i>
+                                    <h5>Aucune donnée de performance</h5>
+                                    <p>Les données de performance des nageurs s'afficheront ici.</p>
+                                </div>
+                            </div>
+                            
+                            <div class="tab-pane fade" id="physical" role="tabpanel">
+                                <div class="empty-state">
+                                    <i class="fas fa-dumbbell"></i>
+                                    <h5>Aucune donnée physique</h5>
+                                    <p>Les données d'état physique des nageurs s'afficheront ici.</p>
+                                </div>
+                            </div>
+                            
+                            <div class="tab-pane fade" id="load" role="tabpanel">
+                                <div class="empty-state">
+                                    <i class="fas fa-weight-hanging"></i>
+                                    <h5>Aucune donnée de charge</h5>
+                                    <p>Les données de charge d'entraînement des nageurs s'afficheront ici.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Groups Page -->
+                <div class="page" id="groups">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <div>
+                            <h2>Gestion des Groupes</h2>
+                            <p class="text-muted mb-0">Organisation et suivi des groupes d'entraînement</p>
+                        </div>
+                        <div>
+                            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addGroupModal"><i class="fas fa-plus"></i> Nouveau groupe</button>
+                        </div>
+                    </div>
+                    
+                    <div class="row" id="groupsContainer">
+                        <!-- Groups will be populated dynamically -->
+                    </div>
+                    
+                    <div class="dashboard-card mt-4">
+                        <h5 class="card-title"><i class="fas fa-chart-bar"></i> Comparaison des groupes</h5>
+                        <div class="performance-chart">
+                            <canvas id="groupsComparisonChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Swimmers Page -->
+                <div class="page" id="swimmers">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <div>
+                            <h2>Gestion des Nageurs</h2>
+                            <p class="text-muted mb-0">Fiches individuelles et suivi personnalisé</p>
+                        </div>
+                        <div>
+                            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addSwimmerModal"><i class="fas fa-plus"></i> Nouveau nageur</button>
+                        </div>
+                    </div>
+                    
+                    <div class="dashboard-card">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <input type="text" class="form-control" id="searchSwimmer" placeholder="Rechercher un nageur...">
+                            </div>
+                            <div class="col-md-3">
+                                <select class="form-select" id="filterGroup">
+                                    <option value="all">Tous les groupes</option>
+                                    <option value="A">Groupe A - Élite</option>
+                                    <option value="B">Groupe B - Perfectionnement</option>
+                                    <option value="C">Groupe C - Débutants</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <select class="form-select" id="filterSpecialty">
+                                    <option value="all">Toutes spécialités</option>
+                                    <option value="crawl">Nage libre</option>
+                                    <option value="dos">Dos</option>
+                                    <option value="brasse">Brasse</option>
+                                    <option value="papillon">Papillon</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Nageur</th>
+                                        <th>Âge</th>
+                                        <th>Groupe</th>
+                                        <th>Spécialité</th>
+                                        <th>Dernier test</th>
+                                        <th>Statut</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="swimmersListBody">
+                                    <!-- Swimmers will be populated dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <nav aria-label="Page navigation">
+                            <ul class="pagination justify-content-center">
+                                <li class="page-item disabled"><a class="page-link" href="#">Précédent</a></li>
+                                <li class="page-item active"><a class="page-link" href="#">1</a></li>
+                                <li class="page-item"><a class="page-link" href="#">2</a></li>
+                                <li class="page-item"><a class="page-link" href="#">3</a></li>
+                                <li class="page-item"><a class="page-link" href="#">Suivant</a></li>
+                            </ul>
+                        </nav>
+                    </div>
+                </div>
+                
+                <!-- Technical Sheets Page -->
+                <div class="page" id="technical-sheets">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <div>
+                            <h2>Fiches Techniques</h2>
+                            <p class="text-muted mb-0">Analyses techniques détaillées par nageur</p>
+                        </div>
+                        <div>
+                            <button class="btn btn-primary"><i class="fas fa-plus"></i> Nouvelle fiche</button>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="dashboard-card">
+                                <h5 class="card-title"><i class="fas fa-user"></i> Lucas Bernard</h5>
+                                <div class="text-center mb-3">
+                                    <img src="https://i.pravatar.cc/150?img=1" class="swimmer-avatar-large" alt="Avatar">
+                                </div>
+                                
+                                <ul class="nav nav-pills mb-3" id="pills-tab" role="tablist">
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link active" id="pills-crawl-tab" data-bs-toggle="pill" data-bs-target="#pills-crawl" type="button" role="tab">Crawl</button>
+                                    </li>
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link" id="pills-dos-tab" data-bs-toggle="pill" data-bs-target="#pills-dos" type="button" role="tab">Dos</button>
+                                    </li>
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link" id="pills-brasse-tab" data-bs-toggle="pill" data-bs-target="#pills-brasse" type="button" role="tab">Brasse</button>
+                                    </li>
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link" id="pills-papillon-tab" data-bs-toggle="pill" data-bs-target="#pills-papillon" type="button" role="tab">Papillon</button>
+                                    </li>
+                                </ul>
+                                
+                                <div class="tab-content" id="pills-tabContent">
+                                    <div class="tab-pane fade show active" id="pills-crawl" role="tabpanel">
+                                        <h6>Analyse technique - Crawl</h6>
+                                        <div class="mb-2">
+                                            <small>Amplitude: <span class="badge bg-success">Excellente</span></small>
+                                        </div>
+                                        <div class="mb-2">
+                                            <small>Fréquence: <span class="badge bg-warning">Moyenne</span></small>
+                                        </div>
+                                        <div class="mb-2">
+                                            <small>Respiration: <span class="badge bg-success">Bonne</span></small>
+                                        </div>
+                                        <div class="mb-2">
+                                            <small>Coordination: <span class="badge bg-info">Correcte</span></small>
+                                        </div>
+                                    </div>
+                                    <div class="tab-pane fade" id="pills-dos" role="tabpanel">
+                                        <h6>Analyse technique - Dos</h6>
+                                        <div class="mb-2">
+                                            <small>Roulis: <span class="badge bg-success">Excellente</span></small>
+                                        </div>
+                                        <div class="mb-2">
+                                            <small>Position: <span class="badge bg-warning">Améliorable</span></small>
+                                        </div>
+                                    </div>
+                                    <div class="tab-pane fade" id="pills-brasse" role="tabpanel">
+                                        <h6>Analyse technique - Brasse</h6>
+                                        <div class="mb-2">
+                                            <small>Timing: <span class="badge bg-danger">À travailler</span></small>
+                                        </div>
+                                    </div>
+                                    <div class="tab-pane fade" id="pills-papillon" role="tabpanel">
+                                        <h6>Analyse technique - Papillon</h6>
+                                        <div class="mb-2">
+                                            <small>Ondulation: <span class="badge bg-success">Excellente</span></small>
+                                        </div>
+                                        <div class="mb-2">
+                                            <small>Respiration: <span class="badge bg-info">Correcte</span></small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-8">
+                            <div class="dashboard-card">
+                                <h5 class="card-title"><i class="fas fa-chart-line"></i> Évolution technique</h5>
+                                <div class="performance-chart">
+                                    <canvas id="technicalEvolutionChart"></canvas>
+                                </div>
+                            </div>
+                            
+                            <div class="dashboard-card">
+                                <h5 class="card-title"><i class="fas fa-clipboard-list"></i> Dernières observations</h5>
+                                <div class="table-responsive">
+                                    <table class="table">
+                                        <thead>
+                                            <tr>
+                                                <th>Date</th>
+                                                <th>Nage</th>
+                                                <th>Observation</th>
+                                                <th>Entraîneur</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td>15/05/2023</td>
+                                                <td><span class="badge bg-info">Papillon</span></td>
+                                                <td>Amélioration de l'ondulation, timing à peaufiner</td>
+                                                <td>Jean Dupont</td>
+                                            </tr>
+                                            <tr>
+                                                <td>10/05/2023</td>
+                                                <td><span class="badge bg-primary">Crawl</span></td>
+                                                <td>Respiration bilatérale bien maîtrisée</td>
+                                                <td>Jean Dupont</td>
+                                            </tr>
+                                            <tr>
+                                                <td>05/05/2023</td>
+                                                <td><span class="badge bg-warning">Brasse</span></td>
+                                                <td>Progrès sur le mouvement des jambes</td>
+                                                <td>Marie Lambert</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Daily Monitoring Page -->
+                <div class="page" id="daily-monitoring">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <div>
+                            <h2>Suivi Quotidien</h2>
+                            <p class="text-muted mb-0">Monitoring du bien-être et de la charge d'entraînement</p>
+                        </div>
+                        <div>
+                            <button class="btn btn-primary"><i class="fas fa-plus"></i> Nouvelle entrée</button>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-8">
+                            <div class="dashboard-card">
+                                <h5 class="card-title"><i class="fas fa-chart-area"></i> Évolution du bien-être et de la charge</h5>
+                                <div class="performance-chart">
+                                    <canvas id="wellnessLoadChart"></canvas>
+                                </div>
+                            </div>
+                            
+                            <div class="dashboard-card">
+                                <h5 class="card-title"><i class="fas fa-table"></i> Dernières entrées</h5>
+                                <div class="table-responsive">
+                                    <table class="table table-hover">
+                                        <thead>
+                                            <tr>
+                                                <th>Date</th>
+                                                <th>Nageur</th>
+                                                <th>Bien-être</th>
+                                                <th>Fatigue</th>
+                                                <th>Stress</th>
+                                                <th>Sommeil</th>
+                                                <th>Charge</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td>20/05/2023</td>
+                                                <td>Lucas Bernard</td>
+                                                <td><span class="wellness-indicator wellness-good"></span> 8/10</td>
+                                                <td>6/10</td>
+                                                <td>4/10</td>
+                                                <td>7/10</td>
+                                                <td><span class="badge bg-warning">Moyenne</span></td>
+                                            </tr>
+                                            <tr>
+                                                <td>20/05/2023</td>
+                                                <td>Emma Petit</td>
+                                                <td><span class="wellness-indicator wellness-average"></span> 6/10</td>
+                                                <td>7/10</td>
+                                                <td>5/10</td>
+                                                <td>6/10</td>
+                                                <td><span class="badge bg-success">Faible</span></td>
+                                            </tr>
+                                            <tr>
+                                                <td>20/05/2023</td>
+                                                <td>Hugo Moreau</td>
+                                                <td><span class="wellness-indicator wellness-poor"></span> 4/10</td>
+                                                <td>9/10</td>
+                                                <td>7/10</td>
+                                                <td>5/10</td>
+                                                <td><span class="badge bg-danger">Élevée</span></td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <div class="dashboard-card">
+                                <h5 class="card-title"><i class="fas fa-exclamation-triangle"></i> Alertes bien-être</h5>
+                                <div class="alert-card alert-danger p-3 mb-3">
+                                    <h6>Hugo Moreau</h6>
+                                    <p class="small mb-0">Score de bien-être en baisse (4/10), fatigue élevée (9/10)</p>
+                                </div>
+                                <div class="alert-card alert-warning p-3 mb-3">
+                                    <h6>Emma Petit</h6>
+                                    <p class="small mb-0">Qualité de sommeil diminuée (6/10)</p>
+                                </div>
+                            </div>
+                            
+                            <div class="dashboard-card">
+                                <h5 class="card-title"><i class="fas fa-calculator"></i> Indices de charge</h5>
+                                <div class="mb-3">
+                                    <h6>Monotonie: <span class="monotony-value text-warning">1.8</span></h6>
+                                    <div class="progress" style="height: 10px;">
+                                        <div class="progress-bar bg-warning" role="progressbar" style="width: 60%"></div>
+                                    </div>
+                                    <small class="text-muted">Zone de risque: >2.0</small>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <h6>Strain: <span class="strain-value text-danger">4200</span></h6>
+                                    <div class="progress" style="height: 10px;">
+                                        <div class="progress-bar bg-danger" role="progressbar" style="width: 70%"></div>
+                                    </div>
+                                    <small class="text-muted">Élevé: >4000</small>
+                                </div>
+                                
+                                <div>
+                                    <h6>ACWR: <span class="text-warning">1.3</span></h6>
+                                    <div class="progress" style="height: 10px;">
+                                        <div class="progress-bar bg-success" role="progressbar" style="width: 30%"></div>
+                                        <div class="progress-bar bg-warning" role="progressbar" style="width: 40%"></div>
+                                        <div class="progress-bar bg-danger" role="progressbar" style="width: 30%"></div>
+                                    </div>
+                                    <small class="text-muted">Optimal: 0.8-1.3</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Performance Page -->
+                <div class="page" id="performance">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <div>
+                            <h2>Suivi des Performances</h2>
+                            <p class="text-muted mb-0">Analyse et évolution des résultats en compétition</p>
+                        </div>
+                        <div>
+                            <button class="btn btn-primary"><i class="fas fa-plus"></i> Nouveau résultat</button>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-8">
+                            <div class="dashboard-card">
+                                <h5 class="card-title"><i class="fas fa-chart-line"></i> Évolution des performances</h5>
+                                <div class="performance-chart">
+                                    <canvas id="performanceEvolutionChart"></canvas>
+                                </div>
+                            </div>
+                            
+                            <div class="dashboard-card">
+                                <h5 class="card-title"><i class="fas fa-trophy"></i> Derniers résultats</h5>
+                                <div class="table-responsive">
+                                    <table class="table table-hover">
+                                        <thead>
+                                            <tr>
+                                                <th>Date</th>
+                                                <th>Compétition</th>
+                                                <th>Nageur</th>
+                                                <th>Épreuve</th>
+                                                <th>Temps</th>
+                                                <th>Rang</th>
+                                                <th>Points</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td>15/05/2023</td>
+                                                <td>Championnat Régional</td>
+                                                <td>Lucas Bernard</td>
+                                                <td>100m Papillon</td>
+                                                <td>54.23</td>
+                                                <td><span class="badge bg-success">1er</span></td>
+                                                <td>850</td>
+                                            </tr>
+                                            <tr>
+                                                <td>15/05/2023</td>
+                                                <td>Championnat Régional</td>
+                                                <td>Emma Petit</td>
+                                                <td>200m Dos</td>
+                                                <td>2:08.45</td>
+                                                <td><span class="badge bg-warning">3ème</span></td>
+                                                <td>780</td>
+                                            </tr>
+                                            <tr>
+                                                <td>10/05/2023</td>
+                                                <td>Meeting International</td>
+                                                <td>Hugo Moreau</td>
+                                                <td>100m Brasse</td>
+                                                <td>1:01.34</td>
+                                                <td><span class="badge bg-info">5ème</span></td>
+                                                <td>720</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <div class="dashboard-card">
+                                <h5 class="card-title"><i class="fas fa-medal"></i> Meilleures performances</h5>
+                                <div class="list-group">
+                                    <div class="list-group-item">
+                                        <div class="d-flex w-100 justify-content-between">
+                                            <h6 class="mb-1">Lucas Bernard</h6>
+                                            <small>54.23</small>
+                                        </div>
+                                        <p class="mb-1">100m Papillon</p>
+                                        <small>15/05/2023 - Championnat Régional</small>
+                                    </div>
+                                    <div class="list-group-item">
+                                        <div class="d-flex w-100 justify-content-between">
+                                            <h6 class="mb-1">Emma Petit</h6>
+                                            <small>2:08.45</small>
+                                        </div>
+                                        <p class="mb-1">200m Dos</p>
+                                        <small>15/05/2023 - Championnat Régional</small>
+                                    </div>
+                                    <div class="list-group-item">
+                                        <div class="d-flex w-100 justify-content-between">
+                                            <h6 class="mb-1">Hugo Moreau</h6>
+                                            <small>1:01.34</small>
+                                        </div>
+                                        <p class="mb-1">100m Brasse</p>
+                                        <small>10/05/2023 - Meeting International</small>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="dashboard-card">
+                                <h5 class="card-title"><i class="fas fa-chart-pie"></i> Répartition par nage</h5>
+                                <div class="performance-chart">
+                                    <canvas id="strokeDistributionChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Physical Condition Page -->
+                <div class="page" id="physical-condition">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <div>
+                            <h2>État Physique</h2>
+                            <p class="text-muted mb-0">Suivi de la condition physique et prévention des blessures</p>
+                        </div>
+                        <div>
+                            <button class="btn btn-primary"><i class="fas fa-plus"></i> Nouvelle évaluation</button>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-8">
+                            <div class="dashboard-card">
+                                <h5 class="card-title"><i class="fas fa-chart-line"></i> Évolution des capacités physiques</h5>
+                                <div class="performance-chart">
+                                    <canvas id="physicalCapacitiesChart"></canvas>
+                                </div>
+                            </div>
+                            
+                            <div class="dashboard-card">
+                                <h5 class="card-title"><i class="fas fa-dumbbell"></i> Derniers tests physiques</h5>
+                                <div class="table-responsive">
+                                    <table class="table table-hover">
+                                        <thead>
+                                            <tr>
+                                                <th>Date</th>
+                                                <th>Nageur</th>
+                                                <th>VO2 Max</th>
+                                                <th>Force jambes</th>
+                                                <th>Force épaules</th>
+                                                <th>Force pectoraux</th>
+                                                <th>Souplesse</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td>15/05/2023</td>
+                                                <td>Lucas Bernard</td>
+                                                <td>62.4</td>
+                                                <td>84%</td>
+                                                <td>78%</td>
+                                                <td>82%</td>
+                                                <td>7.5/10</td>
+                                            </tr>
+                                            <tr>
+                                                <td>12/05/2023</td>
+                                                <td>Emma Petit</td>
+                                                <td>58.7</td>
+                                                <td>76%</td>
+                                                <td>82%</td>
+                                                <td>79%</td>
+                                                <td>8.2/10</td>
+                                            </tr>
+                                            <tr>
+                                                <td>10/05/2023</td>
+                                                <td>Hugo Moreau</td>
+                                                <td>61.2</td>
+                                                <td>81%</td>
+                                                <td>75%</td>
+                                                <td>77%</td>
+                                                <td>6.8/10</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <div class="dashboard-card">
+                                <h5 class="card-title"><i class="fas fa-user-injured"></i> État des blessures</h5>
+                                <div class="alert-card alert-warning p-3 mb-3">
+                                    <h6>Hugo Moreau</h6>
+                                    <p class="small mb-0">Épaule droite - Tendinite légère</p>
+                                    <small>Depuis: 08/05/2023</small>
+                                </div>
+                                <div class="alert-card alert-info p-3">
+                                    <h6>Emma Petit</h6>
+                                    <p class="small mb-0">Genou gauche - Prévention</p>
+                                    <small>Surveillance renforcée</small>
+                                </div>
+                            </div>
+                            
+                            <div class="dashboard-card">
+                                <h5 class="card-title"><i class="fas fa-running"></i> Capacités physiques - Groupe A</h5>
+                                <div class="fitness-indicator">
+                                    <div class="fitness-label">Endurance</div>
+                                    <div class="fitness-bar">
+                                        <div class="fitness-fill load-medium" style="width: 75%"></div>
+                                    </div>
+                                    <div class="fitness-value">75%</div>
+                                </div>
+                                <div class="fitness-indicator">
+                                    <div class="fitness-label">Puissance</div>
+                                    <div class="fitness-bar">
+                                        <div class="fitness-fill load-high" style="width: 82%"></div>
+                                    </div>
+                                    <div class="fitness-value">82%</div>
+                                </div>
+                                <div class="fitness-indicator">
+                                    <div class="fitness-label">Force</div>
+                                    <div class="fitness-bar">
+                                        <div class="fitness-fill load-medium" style="width: 68%"></div>
+                                    </div>
+                                    <div class="fitness-value">68%</div>
+                                </div>
+                                <div class="fitness-indicator">
+                                    <div class="fitness-label">Souplesse</div>
+                                    <div class="fitness-bar">
+                                        <div class="fitness-fill load-low" style="width: 58%"></div>
+                                    </div>
+                                    <div class="fitness-value">58%</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Absences Page -->
+                <div class="page" id="absences">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <div>
+                            <h2>Gestion des Absences</h2>
+                            <p class="text-muted mb-0">Suivi des présences et gestion des justificatifs</p>
+                        </div>
+                        <div>
+                            <button class="btn btn-primary"><i class="fas fa-plus"></i> Nouvelle absence</button>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-8">
+                            <div class="dashboard-card">
+                                <h5 class="card-title"><i class="fas fa-chart-bar"></i> Taux de présence par mois</h5>
+                                <div class="performance-chart">
+                                    <canvas id="attendanceChart"></canvas>
+                                </div>
+                            </div>
+                            
+                            <div class="dashboard-card">
+                                <h5 class="card-title"><i class="fas fa-calendar-times"></i> Absences récentes</h5>
+                                <div class="table-responsive">
+                                    <table class="table table-hover">
+                                        <thead>
+                                            <tr>
+                                                <th>Date</th>
+                                                <th>Nageur</th>
+                                                <th>Groupe</th>
+                                                <th>Motif</th>
+                                                <th>Justificatif</th>
+                                                <th>Statut</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td>20/05/2023</td>
+                                                <td>Hugo Moreau</td>
+                                                <td><span class="badge bg-primary">Groupe A</span></td>
+                                                <td>Blessure</td>
+                                                <td><span class="badge bg-success">Fourni</span></td>
+                                                <td><span class="badge bg-warning">En attente</span></td>
+                                                <td>
+                                                    <button class="btn btn-sm btn-outline-primary">Voir</button>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td>19/05/2023</td>
+                                                <td>Emma Petit</td>
+                                                <td><span class="badge bg-primary">Groupe A</span></td>
+                                                <td>Maladie</td>
+                                                <td><span class="badge bg-success">Fourni</span></td>
+                                                <td><span class="badge bg-success">Validé</span></td>
+                                                <td>
+                                                    <button class="btn btn-sm btn-outline-primary">Voir</button>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td>18/05/2023</td>
+                                                <td>Lucas Bernard</td>
+                                                <td><span class="badge bg-primary">Groupe A</span></td>
+                                                <td>Raison personnelle</td>
+                                                <td><span class="badge bg-danger">Manquant</span></td>
+                                                <td><span class="badge bg-warning">En attente</span></td>
+                                                <td>
+                                                    <button class="btn btn-sm btn-outline-primary">Voir</button>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <div class="dashboard-card">
+                                <h5 class="card-title"><i class="fas fa-chart-pie"></i> Répartition des absences</h5>
+                                <div class="performance-chart">
+                                    <canvas id="absenceDistributionChart"></canvas>
+                                </div>
+                            </div>
+                            
+                            <div class="dashboard-card">
+                                <h5 class="card-title"><i class="fas fa-exclamation-circle"></i> Absences non justifiées</h5>
+                                <div class="alert-card alert-danger p-3 mb-3">
+                                    <h6>Lucas Bernard</h6>
+                                    <p class="small mb-0">Absence du 18/05 - Justificatif manquant</p>
+                                </div>
+                                <div class="alert-card alert-warning p-3">
+                                    <h6>Thomas Martin</h6>
+                                    <p class="small mb-0">2 absences ce mois - Motif à vérifier</p>
+                                </div>
+                            </div>
+                            
+                            <div class="dashboard-card">
+                                <h5 class="card-title"><i class="fas fa-percentage"></i> Statistiques de présence</h5>
+                                <div class="stats-value">87%</div>
+                                <div class="stats-label">Taux de présence global</div>
+                                <div class="mt-3">
+                                    <div class="d-flex justify-content-between">
+                                        <span>Groupe A:</span>
+                                        <span>92%</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between">
+                                        <span>Groupe B:</span>
+                                        <span>85%</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between">
+                                        <span>Groupe C:</span>
+                                        <span>78%</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Competitions Page -->
+                <div class="page" id="competitions">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <div>
+                            <h2>Gestion des Compétitions</h2>
+                            <p class="text-muted mb-0">Planning, engagements et résultats</p>
+                        </div>
+                        <div>
+                            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addCompetitionModal"><i class="fas fa-plus"></i> Nouvelle compétition</button>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-8">
+                            <div class="dashboard-card">
+                                <h5 class="card-title"><i class="fas fa-calendar-alt"></i> Calendrier des compétitions</h5>
+                                <div class="table-responsive">
+                                    <table class="table table-hover" id="competitionsTable">
+                                        <thead>
+                                            <tr>
+                                                <th>Date</th>
+                                                <th>Compétition</th>
+                                                <th>Lieu</th>
+                                                <th>Niveau</th>
+                                                <th>Engagés</th>
+                                                <th>Statut</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="competitionsTableBody">
+                                            <!-- Competitions will be populated dynamically -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            
+                            <div class="dashboard-card">
+                                <h5 class="card-title"><i class="fas fa-flag-checkered"></i> Prochaines échéances</h5>
+                                <div class="list-group" id="upcomingCompetitionsDetailed">
+                                    <!-- Competitions will be populated dynamically -->
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <div class="dashboard-card">
+                                <h5 class="card-title"><i class="fas fa-trophy"></i> Palmarès récent</h5>
+                                <div class="list-group">
+                                    <div class="list-group-item">
+                                        <div class="d-flex w-100 justify-content-between">
+                                            <h6 class="mb-1">Championnat Régional</h6>
+                                            <span class="badge bg-success">5 médailles</span>
+                                        </div>
+                                        <p class="mb-1">2 Or, 2 Argent, 1 Bronze</p>
+                                        <small>15-17/05/2023</small>
+                                    </div>
+                                    <div class="list-group-item">
+                                        <div class="d-flex w-100 justify-content-between">
+                                            <h6 class="mb-1">Meeting International</h6>
+                                            <span class="badge bg-success">3 médailles</span>
+                                        </div>
+                                        <p class="mb-1">1 Or, 2 Bronze</p>
+                                        <small>10-12/05/2023</small>
+                                    </div>
+                                    <div class="list-group-item">
+                                        <div class="d-flex w-100 justify-content-between">
+                                            <h6 class="mb-1">Coupe de Printemps</h6>
+                                            <span class="badge bg-success">7 médailles</span>
+                                        </div>
+                                        <p class="mb-1">3 Or, 2 Argent, 2 Bronze</p>
+                                        <small>05-07/04/2023</small>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="dashboard-card">
+                                <h5 class="card-title"><i class="fas fa-chart-bar"></i> Performances par compétition</h5>
+                                <div class="performance-chart">
+                                    <canvas id="competitionPerformanceChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Settings Page -->
+                <div class="page" id="settings">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <div>
+                            <h2>Paramètres</h2>
+                            <p class="text-muted mb-0">Configuration de l'application et préférences</p>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-8">
+                            <div class="dashboard-card">
+                                <h5 class="card-title"><i class="fas fa-user-cog"></i> Paramètres du compte</h5>
+                                <div class="parameter-section">
+                                    <h6>Informations personnelles</h6>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label class="form-label">Nom</label>
+                                                <input type="text" class="form-control" value="Jean Dupont">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label class="form-label">Prénom</label>
+                                                <input type="text" class="form-control" value="Jean">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Email</label>
+                                        <input type="email" class="form-control" value="jean.dupont@example.com">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Rôle</label>
+                                        <input type="text" class="form-control" value="Entraîneur principal" disabled>
+                                    </div>
+                                </div>
+                                
+                                <div class="parameter-section">
+                                    <h6>Préférences de notification</h6>
+                                    <div class="form-check form-switch mb-2">
+                                        <input class="form-check-input" type="checkbox" id="notif1" checked>
+                                        <label class="form-check-label" for="notif1">Alertes de charge d'entraînement</label>
+                                    </div>
+                                    <div class="form-check form-switch mb-2">
+                                        <input class="form-check-input" type="checkbox" id="notif2" checked>
+                                        <label class="form-check-label" for="notif2">Rapports de bien-être</label>
+                                    </div>
+                                    <div class="form-check form-switch mb-2">
+                                        <input class="form-check-input" type="checkbox" id="notif3">
+                                        <label class="form-check-label" for="notif3">Nouvelles absences</label>
+                                    </div>
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="notif4" checked>
+                                        <label class="form-check-label" for="notif4">Rappels de compétitions</label>
+                                    </div>
+                                </div>
+                                
+                                <div class="parameter-section">
+                                    <h6>Unités de mesure</h6>
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="radio" name="units" id="metric" checked>
+                                        <label class="form-check-label" for="metric">
+                                            Système métrique (mètres, kilogrammes)
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="units" id="imperial">
+                                        <label class="form-check-label" for="imperial">
+                                            Système impérial (yards, livres)
+                                        </label>
+                                    </div>
+                                </div>
+                                
+                                <button class="btn btn-primary mt-3">Enregistrer les modifications</button>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <div class="dashboard-card">
+                                <h5 class="card-title"><i class="fas fa-palette"></i> Apparence</h5>
+                                <div class="mb-3">
+                                    <label class="form-label">Thème</label>
+                                    <select class="form-select" id="themeSelect">
+                                        <option value="light">Clair</option>
+                                        <option value="dark">Sombre</option>
+                                        <option value="auto">Automatique (selon le système)</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Densité d'affichage</label>
+                                    <select class="form-select">
+                                        <option selected>Comfortable</option>
+                                        <option>Compacte</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Langue</label>
+                                    <select class="form-select">
+                                        <option selected>Français</option>
+                                        <option>English</option>
+                                        <option>Español</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div class="dashboard-card">
+                                <h5 class="card-title"><i class="fas fa-database"></i> Gestion des données</h5>
+                                <div class="d-grid gap-2">
+                                    <button class="btn btn-outline-primary" id="exportAllDataBtn"><i class="fas fa-download"></i> Exporter toutes les données</button>
+                                    <button class="btn btn-outline-secondary"><i class="fas fa-file-import"></i> Importer des données</button>
+                                    <button class="btn btn-outline-danger" id="clearDataBtn"><i class="fas fa-trash-alt"></i> Supprimer les données de test</button>
+                                </div>
+                            </div>
+                            
+                            <div class="dashboard-card">
+                                <h5 class="card-title"><i class="fas fa-info-circle"></i> À propos</h5>
+                                <p class="small">SwimAnalytics Pro v2.1.0</p>
+                                <p class="small text-muted">Application de gestion d'équipe de natation développée avec les technologies Web 3.0</p>
+                                <div class="mt-3">
+                                    <button class="btn btn-sm btn-outline-primary">Vérifier les mises à jour</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Application State
+        const SwimApp = {
+            data: {
+                swimmers: [],
+                groups: [],
+                competitions: [],
+                dailyMonitoring: [],
+                technicalSheets: [],
+                performances: [],
+                physicalCondition: [],
+                absences: [],
+                settings: {}
+            },
+            
+            // Initialize the application
+            init: function() {
+                this.loadData();
+                this.setupEventListeners();
+                this.setupNavigation();
+                this.renderDashboard();
+                this.renderSwimmers();
+                this.renderGroups();
+                this.renderCompetitions();
+                this.setupCharts();
+                
+                console.log('SwimAnalytics Pro initialized successfully');
+            },
+            
+            // Load data from localStorage
+            loadData: function() {
+                const savedData = localStorage.getItem('swimAnalyticsData');
+                if (savedData) {
+                    this.data = JSON.parse(savedData);
+                } else {
+                    // Initialize with sample data
+                    this.initializeSampleData();
+                }
+            },
+            
+            // Save data to localStorage
+            saveData: function() {
+                localStorage.setItem('swimAnalyticsData', JSON.stringify(this.data));
+            },
+            
+            // Initialize with sample data
+            initializeSampleData: function() {
+                this.data.swimmers = [
+                    {
+                        id: 1,
+                        firstName: 'Lucas',
+                        lastName: 'Bernard',
+                        birthdate: '2006-05-15',
+                        gender: 'M',
+                        group: 'A',
+                        specialty: 'papillon',
+                        email: 'lucas.bernard@example.com',
+                        phone: '06 12 34 56 78',
+                        avatar: 'https://i.pravatar.cc/150?img=1',
+                        status: 'active',
+                        joinDate: '2022-09-01'
+                    },
+                    {
+                        id: 2,
+                        firstName: 'Emma',
+                        lastName: 'Petit',
+                        birthdate: '2007-03-22',
+                        gender: 'F',
+                        group: 'A',
+                        specialty: 'dos',
+                        email: 'emma.petit@example.com',
+                        phone: '06 23 45 67 89',
+                        avatar: 'https://i.pravatar.cc/150?img=2',
+                        status: 'active',
+                        joinDate: '2022-09-01'
+                    },
+                    {
+                        id: 3,
+                        firstName: 'Hugo',
+                        lastName: 'Moreau',
+                        birthdate: '2005-11-08',
+                        gender: 'M',
+                        group: 'A',
+                        specialty: 'brasse',
+                        email: 'hugo.moreau@example.com',
+                        phone: '06 34 56 78 90',
+                        avatar: 'https://i.pravatar.cc/150?img=3',
+                        status: 'injured',
+                        joinDate: '2021-09-01'
+                    }
+                ];
+                
+                this.data.groups = [
+                    {
+                        id: 'A',
+                        name: 'Groupe A - Élite Compétition',
+                        coach: 'Jean Dupont',
+                        level: 'elite',
+                        schedule: 'Lundi: 18h-20h\nMercredi: 17h-19h\nVendredi: 18h-20h\nSamedi: 9h-12h',
+                        objectives: 'Préparation aux championnats nationaux et qualification pour les compétitions internationales',
+                        swimmersCount: 12
+                    },
+                    {
+                        id: 'B',
+                        name: 'Groupe B - Perfectionnement',
+                        coach: 'Marie Lambert',
+                        level: 'competition',
+                        schedule: 'Mardi: 18h-20h\nJeudi: 17h-19h\nSamedi: 10h-12h',
+                        objectives: 'Perfectionnement technique et préparation aux compétitions régionales',
+                        swimmersCount: 8
+                    },
+                    {
+                        id: 'C',
+                        name: 'Groupe C - Débutants',
+                        coach: 'Thomas Martin',
+                        level: 'debutant',
+                        schedule: 'Lundi: 17h-18h30\nMercredi: 17h-18h30',
+                        objectives: 'Apprentissage des techniques de base et découverte de la compétition',
+                        swimmersCount: 15
+                    }
+                ];
+                
+                this.data.competitions = [
+                    {
+                        id: 1,
+                        name: 'Championnat Régional',
+                        level: 'regional',
+                        startDate: '2023-06-15',
+                        endDate: '2023-06-17',
+                        location: 'Paris',
+                        description: 'Championnat régional de natation - Épreuves individuelles et relais',
+                        swimmers: [1, 2, 3],
+                        status: 'upcoming'
+                    },
+                    {
+                        id: 2,
+                        name: 'Coupe de Printemps',
+                        level: 'regional',
+                        startDate: '2023-04-05',
+                        endDate: '2023-04-07',
+                        location: 'Lyon',
+                        description: 'Compétition de printemps - Toutes nages',
+                        swimmers: [1, 2],
+                        status: 'completed'
+                    }
+                ];
+                
+                this.saveData();
+            },
+            
+            // Set up event listeners
+            setupEventListeners: function() {
+                // Theme toggle
+                document.getElementById('themeToggle').addEventListener('click', this.toggleTheme);
+                
+                // Save swimmer
+                document.getElementById('saveSwimmerBtn').addEventListener('click', this.saveSwimmer.bind(this));
+                
+                // Save group
+                document.getElementById('saveGroupBtn').addEventListener('click', this.saveGroup.bind(this));
+                
+                // Save competition
+                document.getElementById('saveCompetitionBtn').addEventListener('click', this.saveCompetition.bind(this));
+                
+                // Export data
+                document.getElementById('exportDataBtn').addEventListener('click', this.exportData.bind(this));
+                document.getElementById('exportAllDataBtn').addEventListener('click', this.exportAllData.bind(this));
+                
+                // Clear data
+                document.getElementById('clearDataBtn').addEventListener('click', this.clearData.bind(this));
+                
+                // Help button
+                document.getElementById('helpBtn').addEventListener('click', this.showHelp.bind(this));
+                
+                // Group filter
+                document.getElementById('groupSelect').addEventListener('change', this.filterByGroup.bind(this));
+                
+                // Search swimmers
+                document.getElementById('searchSwimmer').addEventListener('input', this.searchSwimmers.bind(this));
+            },
+            
+            // Set up navigation between pages
+            setupNavigation: function() {
+                document.querySelectorAll('.nav-link').forEach(link => {
+                    link.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        
+                        // Remove active class from all links
+                        document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+                        
+                        // Add active class to clicked link
+                        link.classList.add('active');
+                        
+                        // Hide all pages
+                        document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
+                        
+                        // Show selected page
+                        const pageId = link.getAttribute('data-page');
+                        document.getElementById(pageId).classList.add('active');
+                        
+                        // Update page title
+                        document.title = `${link.textContent.trim()} - SwimAnalytics Pro`;
+                    });
+                });
+            },
+            
+            // Toggle between light and dark theme
+            toggleTheme: function() {
+                const currentTheme = document.body.getAttribute('data-theme');
+                const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+                document.body.setAttribute('data-theme', newTheme);
+                
+                const icon = document.getElementById('themeToggle').querySelector('i');
+                if (newTheme === 'dark') {
+                    icon.classList.remove('fa-moon');
+                    icon.classList.add('fa-sun');
+                } else {
+                    icon.classList.remove('fa-sun');
+                    icon.classList.add('fa-moon');
+                }
+                
+                // Save theme preference
+                SwimApp.data.settings.theme = newTheme;
+                SwimApp.saveData();
+            },
+            
+            // Render dashboard with current data
+            renderDashboard: function() {
+                // Update stats
+                document.getElementById('totalSwimmers').textContent = this.data.swimmers.length;
+                
+                const upcomingCompetitions = this.data.competitions.filter(c => c.status === 'upcoming');
+                document.getElementById('upcomingCompetitions').textContent = upcomingCompetitions.length;
+                
+                // Update alerts
+                this.renderAlerts();
+                
+                // Update upcoming competitions list
+                this.renderUpcomingCompetitionsList();
+                
+                // Update swimmers table
+                this.renderSwimmersTable();
+            },
+            
+            // Render alerts on dashboard
+            renderAlerts: function() {
+                const alertsContainer = document.getElementById('alertsContainer');
+                alertsContainer.innerHTML = '';
+                
+                // Sample alerts
+                const alerts = [
+                    {
+                        type: 'warning',
+                        title: 'Charge d\'entraînement élevée',
+                        message: '3 nageurs présentent une charge d\'entraînement supérieure à 120% de leur capacité.',
+                        icon: 'running'
+                    },
+                    {
+                        type: 'info',
+                        title: 'Bien-être diminué',
+                        message: '2 nageurs rapportent un score de bien-être inférieur à 5/10.',
+                        icon: 'frown'
+                    },
+                    {
+                        type: 'danger',
+                        title: 'Risque de monotonie',
+                        message: '1 nageur présente un indice de monotonie élevé (>2.0).',
+                        icon: 'chart-line'
+                    }
+                ];
+                
+                alerts.forEach(alert => {
+                    const alertElement = document.createElement('div');
+                    alertElement.className = `alert-card alert-${alert.type} p-3 mb-3`;
+                    alertElement.innerHTML = `
+                        <h6><i class="fas fa-${alert.icon}"></i> ${alert.title}</h6>
+                        <p class="small mb-0">${alert.message}</p>
+                    `;
+                    alertsContainer.appendChild(alertElement);
+                });
+            },
+            
+            // Render upcoming competitions list
+            renderUpcomingCompetitionsList: function() {
+                const container = document.getElementById('upcomingCompetitionsList');
+                const upcomingCompetitions = this.data.competitions.filter(c => c.status === 'upcoming');
+                
+                if (upcomingCompetitions.length === 0) {
+                    container.innerHTML = '<div class="text-center text-muted p-3">Aucune compétition à venir</div>';
+                    return;
+                }
+                
+                container.innerHTML = '';
+                
+                upcomingCompetitions.forEach(competition => {
+                    const competitionElement = document.createElement('div');
+                    competitionElement.className = 'list-group-item';
+                    competitionElement.innerHTML = `
+                        <h6 class="mb-1">${competition.name}</h6>
+                        <small class="text-muted">${this.formatDate(competition.startDate)} - ${this.formatDate(competition.endDate)}</small>
+                        <div class="mt-2">
+                            <span class="badge bg-primary">${competition.swimmers.length} nageurs engagés</span>
+                        </div>
+                    `;
+                    container.appendChild(competitionElement);
+                });
+            },
+            
+            // Render swimmers table on dashboard
+            renderSwimmersTable: function() {
+                const tableBody = document.getElementById('swimmersTableBody');
+                tableBody.innerHTML = '';
+                
+                this.data.swimmers.forEach(swimmer => {
+                    const row = document.createElement('tr');
+                    
+                    // Calculate age from birthdate
+                    const age = this.calculateAge(swimmer.birthdate);
+                    
+                    // Get specialty badge color
+                    const specialtyBadge = this.getSpecialtyBadge(swimmer.specialty);
+                    
+                    row.innerHTML = `
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <img src="${swimmer.avatar}" class="swimmer-avatar me-3" alt="Avatar">
+                                <div>
+                                    <h6 class="mb-0">${swimmer.firstName} ${swimmer.lastName}</h6>
+                                    <small class="text-muted">Groupe ${swimmer.group} - ${swimmer.gender === 'M' ? 'Masculin' : 'Féminin'}</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td>${age}</td>
+                        <td>${specialtyBadge}</td>
+                        <td>
+                            <div class="progress" style="height: 10px;">
+                                <div class="progress-bar" role="progressbar" style="width: ${85 + Math.random() * 10}%"></div>
+                            </div>
+                            <small>${Math.round(85 + Math.random() * 10)}%</small>
+                        </td>
+                        <td>
+                            <span class="wellness-indicator wellness-${['good', 'average', 'poor'][Math.floor(Math.random() * 3)]}"></span> 
+                            ${Math.floor(4 + Math.random() * 6)}/10
+                        </td>
+                        <td>
+                            <span class="badge bg-${['success', 'warning', 'danger'][Math.floor(Math.random() * 3)]}">
+                                ${['Faible', 'Moyenne', 'Élevée'][Math.floor(Math.random() * 3)]}
+                            </span>
+                        </td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary view-swimmer" data-id="${swimmer.id}">Voir fiche</button>
+                        </td>
+                    `;
+                    
+                    tableBody.appendChild(row);
+                });
+                
+                // Add event listeners to view buttons
+                document.querySelectorAll('.view-swimmer').forEach(button => {
+                    button.addEventListener('click', (e) => {
+                        const swimmerId = parseInt(e.target.getAttribute('data-id'));
+                        this.viewSwimmer(swimmerId);
+                    });
+                });
+            },
+            
+            // Render swimmers list on swimmers page
+            renderSwimmers: function() {
+                const tableBody = document.getElementById('swimmersListBody');
+                tableBody.innerHTML = '';
+                
+                this.data.swimmers.forEach(swimmer => {
+                    const row = document.createElement('tr');
+                    
+                    // Calculate age from birthdate
+                    const age = this.calculateAge(swimmer.birthdate);
+                    
+                    // Get specialty badge
+                    const specialtyBadge = this.getSpecialtyBadge(swimmer.specialty);
+                    
+                    // Get status badge
+                    const statusBadge = swimmer.status === 'active' ? 
+                        '<span class="badge bg-success">Actif</span>' : 
+                        '<span class="badge bg-warning">Blessure</span>';
+                    
+                    row.innerHTML = `
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <img src="${swimmer.avatar}" class="swimmer-avatar me-3" alt="Avatar">
+                                <div>
+                                    <h6 class="mb-0">${swimmer.firstName} ${swimmer.lastName}</h6>
+                                    <small class="text-muted">${swimmer.email}</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td>${age}</td>
+                        <td><span class="badge bg-primary">Groupe ${swimmer.group}</span></td>
+                        <td>${specialtyBadge}</td>
+                        <td>${this.formatDate(new Date().toISOString().split('T')[0])}</td>
+                        <td>${statusBadge}</td>
+                        <td>
+                            <div class="btn-group">
+                                <button class="btn btn-sm btn-outline-primary view-swimmer" data-id="${swimmer.id}">Voir</button>
+                                <button class="btn btn-sm btn-outline-secondary edit-swimmer" data-id="${swimmer.id}">Éditer</button>
+                            </div>
+                        </td>
+                    `;
+                    
+                    tableBody.appendChild(row);
+                });
+                
+                // Add event listeners
+                document.querySelectorAll('.view-swimmer').forEach(button => {
+                    button.addEventListener('click', (e) => {
+                        const swimmerId = parseInt(e.target.getAttribute('data-id'));
+                        this.viewSwimmer(swimmerId);
+                    });
+                });
+                
+                document.querySelectorAll('.edit-swimmer').forEach(button => {
+                    button.addEventListener('click', (e) => {
+                        const swimmerId = parseInt(e.target.getAttribute('data-id'));
+                        this.editSwimmer(swimmerId);
+                    });
+                });
+            },
+            
+            // Render groups on groups page
+            renderGroups: function() {
+                const container = document.getElementById('groupsContainer');
+                container.innerHTML = '';
+                
+                this.data.groups.forEach(group => {
+                    const groupElement = document.createElement('div');
+                    groupElement.className = 'col-md-4';
+                    groupElement.innerHTML = `
+                        <div class="dashboard-card">
+                            <h5 class="card-title"><i class="fas fa-users"></i> ${group.name}</h5>
+                            <div class="stats-value">${group.swimmersCount}</div>
+                            <div class="stats-label">Nageurs</div>
+                            <div class="mt-3">
+                                <p><strong>Entraîneur:</strong> ${group.coach}</p>
+                                <p><strong>Niveau:</strong> ${this.getLevelLabel(group.level)}</p>
+                                <p><strong>Objectif:</strong> ${group.objectives}</p>
+                            </div>
+                            <div class="mt-3">
+                                <button class="btn btn-sm btn-outline-primary view-group" data-id="${group.id}">Voir détails</button>
+                                <button class="btn btn-sm btn-outline-secondary edit-group" data-id="${group.id}">Modifier</button>
+                            </div>
+                        </div>
+                    `;
+                    
+                    container.appendChild(groupElement);
+                });
+                
+                // Add event listeners
+                document.querySelectorAll('.view-group').forEach(button => {
+                    button.addEventListener('click', (e) => {
+                        const groupId = e.target.getAttribute('data-id');
+                        this.viewGroup(groupId);
+                    });
+                });
+                
+                document.querySelectorAll('.edit-group').forEach(button => {
+                    button.addEventListener('click', (e) => {
+                        const groupId = e.target.getAttribute('data-id');
+                        this.editGroup(groupId);
+                    });
+                });
+            },
+            
+            // Render competitions on competitions page
+            renderCompetitions: function() {
+                const tableBody = document.getElementById('competitionsTableBody');
+                tableBody.innerHTML = '';
+                
+                const detailedContainer = document.getElementById('upcomingCompetitionsDetailed');
+                detailedContainer.innerHTML = '';
+                
+                this.data.competitions.forEach(competition => {
+                    // Add to table
+                    const row = document.createElement('tr');
+                    
+                    // Format date range
+                    const dateRange = `${this.formatDate(competition.startDate)} - ${this.formatDate(competition.endDate)}`;
+                    
+                    // Get level badge
+                    const levelBadge = this.getLevelBadge(competition.level);
+                    
+                    // Get status badge
+                    const statusBadge = competition.status === 'upcoming' ? 
+                        '<span class="badge bg-primary">À venir</span>' : 
+                        '<span class="badge bg-success">Terminé</span>';
+                    
+                    row.innerHTML = `
+                        <td>${dateRange}</td>
+                        <td>${competition.name}</td>
+                        <td>${competition.location}</td>
+                        <td>${levelBadge}</td>
+                        <td>${competition.swimmers.length}</td>
+                        <td>${statusBadge}</td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary view-competition" data-id="${competition.id}">Voir</button>
+                        </td>
+                    `;
+                    
+                    tableBody.appendChild(row);
+                    
+                    // Add to upcoming competitions list if upcoming
+                    if (competition.status === 'upcoming') {
+                        const competitionElement = document.createElement('div');
+                        competitionElement.className = 'list-group-item competition-card p-3';
+                        competitionElement.innerHTML = `
+                            <div class="d-flex w-100 justify-content-between">
+                                <h5 class="mb-1">${competition.name}</h5>
+                                <span class="badge bg-primary">${dateRange}</span>
+                            </div>
+                            <p class="mb-1">${competition.location} - ${competition.description}</p>
+                            <small>Date limite d'engagement: ${this.formatDate(this.addDays(competition.startDate, -14))}</small>
+                            <div class="mt-2">
+                                <span class="badge bg-info">${competition.swimmers.length} nageurs engagés</span>
+                            </div>
+                        `;
+                        
+                        detailedContainer.appendChild(competitionElement);
+                    }
+                });
+                
+                // Add event listeners
+                document.querySelectorAll('.view-competition').forEach(button => {
+                    button.addEventListener('click', (e) => {
+                        const competitionId = parseInt(e.target.getAttribute('data-id'));
+                        this.viewCompetition(competitionId);
+                    });
+                });
+            },
+            
+            // Save a new swimmer
+            saveSwimmer: function() {
+                const form = document.getElementById('addSwimmerForm');
+                if (!form.checkValidity()) {
+                    form.reportValidity();
+                    return;
+                }
+                
+                const newSwimmer = {
+                    id: this.data.swimmers.length > 0 ? Math.max(...this.data.swimmers.map(s => s.id)) + 1 : 1,
+                    firstName: document.getElementById('swimmerFirstName').value,
+                    lastName: document.getElementById('swimmerLastName').value,
+                    birthdate: document.getElementById('swimmerBirthdate').value,
+                    gender: document.getElementById('swimmerGender').value,
+                    group: document.getElementById('swimmerGroup').value,
+                    specialty: document.getElementById('swimmerSpecialty').value,
+                    email: document.getElementById('swimmerEmail').value,
+                    phone: document.getElementById('swimmerPhone').value,
+                    address: document.getElementById('swimmerAddress').value,
+                    avatar: `https://i.pravatar.cc/150?img=${Math.floor(Math.random() * 70) + 1}`,
+                    status: 'active',
+                    joinDate: new Date().toISOString().split('T')[0]
+                };
+                
+                this.data.swimmers.push(newSwimmer);
+                this.saveData();
+                
+                // Close modal
+                const modal = bootstrap.Modal.getInstance(document.getElementById('addSwimmerModal'));
+                modal.hide();
+                
+                // Reset form
+                form.reset();
+                
+                // Update UI
+                this.renderDashboard();
+                this.renderSwimmers();
+                
+                // Show success message
+                this.showToast('Nageur ajouté avec succès', 'success');
+            },
+            
+            // Save a new group
+            saveGroup: function() {
+                const form = document.getElementById('addGroupForm');
+                if (!form.checkValidity()) {
+                    form.reportValidity();
+                    return;
+                }
+                
+                const newGroup = {
+                    id: String.fromCharCode(65 + this.data.groups.length), // A, B, C, ...
+                    name: document.getElementById('groupName').value,
+                    coach: document.getElementById('groupCoach').value,
+                    level: document.getElementById('groupLevel').value,
+                    schedule: document.getElementById('groupSchedule').value,
+                    objectives: document.getElementById('groupObjectives').value,
+                    swimmersCount: 0
+                };
+                
+                this.data.groups.push(newGroup);
+                this.saveData();
+                
+                // Close modal
+                const modal = bootstrap.Modal.getInstance(document.getElementById('addGroupModal'));
+                modal.hide();
+                
+                // Reset form
+                form.reset();
+                
+                // Update UI
+                this.renderGroups();
+                
+                // Show success message
+                this.showToast('Groupe ajouté avec succès', 'success');
+            },
+            
+            // Save a new competition
+            saveCompetition: function() {
+                const form = document.getElementById('addCompetitionForm');
+                if (!form.checkValidity()) {
+                    form.reportValidity();
+                    return;
+                }
+                
+                // Get selected swimmers
+                const selectedSwimmers = [];
+                document.querySelectorAll('.swimmer-checkbox:checked').forEach(checkbox => {
+                    selectedSwimmers.push(parseInt(checkbox.value));
+                });
+                
+                const newCompetition = {
+                    id: this.data.competitions.length > 0 ? Math.max(...this.data.competitions.map(c => c.id)) + 1 : 1,
+                    name: document.getElementById('competitionName').value,
+                    level: document.getElementById('competitionLevel').value,
+                    startDate: document.getElementById('competitionStartDate').value,
+                    endDate: document.getElementById('competitionEndDate').value,
+                    location: document.getElementById('competitionLocation').value,
+                    description: document.getElementById('competitionDescription').value,
+                    swimmers: selectedSwimmers,
+                    status: 'upcoming'
+                };
+                
+                this.data.competitions.push(newCompetition);
+                this.saveData();
+                
+                // Close modal
+                const modal = bootstrap.Modal.getInstance(document.getElementById('addCompetitionModal'));
+                modal.hide();
+                
+                // Reset form
+                form.reset();
+                
+                // Update UI
+                this.renderDashboard();
+                this.renderCompetitions();
+                
+                // Show success message
+                this.showToast('Compétition ajoutée avec succès', 'success');
+            },
+            
+            // View swimmer details
+            viewSwimmer: function(id) {
+                const swimmer = this.data.swimmers.find(s => s.id === id);
+                if (swimmer) {
+                    // In a real app, this would navigate to a detailed view
+                    this.showToast(`Affichage des détails de ${swimmer.firstName} ${swimmer.lastName}`, 'info');
+                }
+            },
+            
+            // Edit swimmer
+            editSwimmer: function(id) {
+                const swimmer = this.data.swimmers.find(s => s.id === id);
+                if (swimmer) {
+                    // In a real app, this would open an edit form
+                    this.showToast(`Édition de ${swimmer.firstName} ${swimmer.lastName}`, 'info');
+                }
+            },
+            
+            // View group details
+            viewGroup: function(id) {
+                const group = this.data.groups.find(g => g.id === id);
+                if (group) {
+                    this.showToast(`Affichage des détails du ${group.name}`, 'info');
+                }
+            },
+            
+            // Edit group
+            editGroup: function(id) {
+                const group = this.data.groups.find(g => g.id === id);
+                if (group) {
+                    this.showToast(`Édition du ${group.name}`, 'info');
+                }
+            },
+            
+            // View competition details
+            viewCompetition: function(id) {
+                const competition = this.data.competitions.find(c => c.id === id);
+                if (competition) {
+                    this.showToast(`Affichage des détails de ${competition.name}`, 'info');
+                }
+            },
+            
+            // Filter swimmers by group
+            filterByGroup: function() {
+                const group = document.getElementById('groupSelect').value;
+                // In a real app, this would filter the displayed data
+                this.showToast(`Filtrage par groupe: ${group === 'all' ? 'Tous' : group}`, 'info');
+            },
+            
+            // Search swimmers
+            searchSwimmers: function() {
+                const query = document.getElementById('searchSwimmer').value.toLowerCase();
+                // In a real app, this would filter the displayed data
+                if (query) {
+                    this.showToast(`Recherche: ${query}`, 'info');
+                }
+            },
+            
+            // Export data
+            exportData: function() {
+                const dataStr = JSON.stringify(this.data, null, 2);
+                const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+                
+                const exportFileDefaultName = `swimanalytics-data-${new Date().toISOString().split('T')[0]}.json`;
+                
+                const linkElement = document.createElement('a');
+                linkElement.setAttribute('href', dataUri);
+                linkElement.setAttribute('download', exportFileDefaultName);
+                linkElement.click();
+                
+                this.showToast('Données exportées avec succès', 'success');
+            },
+            
+            // Export all data
+            exportAllData: function() {
+                this.exportData();
+            },
+            
+            // Clear data
+            clearData: function() {
+                if (confirm('Êtes-vous sûr de vouloir supprimer toutes les données de test ? Cette action est irréversible.')) {
+                    localStorage.removeItem('swimAnalyticsData');
+                    this.initializeSampleData();
+                    this.renderDashboard();
+                    this.renderSwimmers();
+                    this.renderGroups();
+                    this.renderCompetitions();
+                    
+                    this.showToast('Données de test réinitialisées', 'success');
+                }
+            },
+            
+            // Show help
+            showHelp: function() {
+                this.showToast('Ouvrir le centre d\'aide', 'info');
+            },
+            
+            // Show toast notification
+            showToast: function(message, type = 'info') {
+                // Create toast element
+                const toastContainer = document.getElementById('toastContainer') || (() => {
+                    const container = document.createElement('div');
+                    container.id = 'toastContainer';
+                    container.className = 'toast-container position-fixed bottom-0 end-0 p-3';
+                    container.style.zIndex = '1100';
+                    document.body.appendChild(container);
+                    return container;
+                })();
+                
+                const toastId = 'toast-' + Date.now();
+                const toast = document.createElement('div');
+                toast.id = toastId;
+                toast.className = `toast align-items-center text-bg-${type} border-0`;
+                toast.innerHTML = `
+                    <div class="d-flex">
+                        <div class="toast-body">
+                            ${message}
+                        </div>
+                        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                    </div>
+                `;
+                
+                toastContainer.appendChild(toast);
+                
+                // Show toast
+                const bsToast = new bootstrap.Toast(toast);
+                bsToast.show();
+                
+                // Remove toast after it's hidden
+                toast.addEventListener('hidden.bs.toast', () => {
+                    toast.remove();
+                });
+            },
+            
+            // Setup charts
+            setupCharts: function() {
+                this.setupTrainingVolumeChart();
+                this.setupGroupAverageChart();
+                this.setupGroupsComparisonChart();
+                // Add other charts as needed
+            },
+            
+            // Training Volume Chart
+            setupTrainingVolumeChart: function() {
+                const ctx = document.getElementById('trainingVolumeChart').getContext('2d');
+                new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['Sem 1', 'Sem 2', 'Sem 3', 'Sem 4', 'Sem 5', 'Sem 6'],
+                        datasets: [{
+                            label: 'Volume d\'entraînement (heures)',
+                            data: [35, 42, 38, 45, 40, 48],
+                            backgroundColor: 'rgba(26, 115, 232, 0.7)',
+                            borderColor: 'rgba(26, 115, 232, 1)',
+                            borderWidth: 1,
+                            yAxisID: 'y'
+                        }, {
+                            label: 'Charge d\'entraînement (AU)',
+                            data: [3200, 3800, 3500, 4200, 3700, 4500],
+                            backgroundColor: 'rgba(234, 67, 53, 0.7)',
+                            borderColor: 'rgba(234, 67, 53, 1)',
+                            borderWidth: 1,
+                            type: 'line',
+                            yAxisID: 'y1'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                title: {
+                                    display: true,
+                                    text: 'Heures'
+                                },
+                                position: 'left'
+                            },
+                            y1: {
+                                beginAtZero: true,
+                                title: {
+                                    display: true,
+                                    text: 'Charge (AU)'
+                                },
+                                position: 'right',
+                                grid: {
+                                    drawOnChartArea: false
+                                }
+                            }
+                        }
+                    }
+                });
+            },
+            
+            // Group Average Chart
+            setupGroupAverageChart: function() {
+                const ctx = document.getElementById('groupAverageChart').getContext('2d');
+                new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin'],
+                        datasets: [{
+                            label: 'Performance moyenne (points)',
+                            data: [65, 68, 70, 72, 75, 78],
+                            backgroundColor: 'rgba(52, 168, 83, 0.2)',
+                            borderColor: 'rgba(52, 168, 83, 1)',
+                            borderWidth: 2,
+                            tension: 0.3,
+                            fill: true
+                        }, {
+                            label: 'Bien-être moyen (%)',
+                            data: [72, 75, 70, 68, 80, 82],
+                            backgroundColor: 'rgba(66, 133, 244, 0.2)',
+                            borderColor: 'rgba(66, 133, 244, 1)',
+                            borderWidth: 2,
+                            tension: 0.3,
+                            fill: true
+                        }, {
+                            label: 'Charge moyenne (AU)',
+                            data: [3200, 3500, 3800, 4200, 4000, 4100],
+                            backgroundColor: 'rgba(251, 188, 5, 0.2)',
+                            borderColor: 'rgba(251, 188, 5, 1)',
+                            borderWidth: 2,
+                            tension: 0.3,
+                            fill: true
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                max: 100
+                            }
+                        }
+                    }
+                });
+            },
+            
+            // Groups Comparison Chart
+            setupGroupsComparisonChart: function() {
+                const ctx = document.getElementById('groupsComparisonChart').getContext('2d');
+                new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['Volume (h)', 'Charge (AU)', 'Performance', 'Présence (%)'],
+                        datasets: [{
+                            label: 'Groupe A',
+                            data: [42, 4200, 78, 92],
+                            backgroundColor: 'rgba(26, 115, 232, 0.7)'
+                        }, {
+                            label: 'Groupe B',
+                            data: [28, 3200, 65, 85],
+                            backgroundColor: 'rgba(52, 168, 83, 0.7)'
+                        }, {
+                            label: 'Groupe C',
+                            data: [15, 1800, 52, 78],
+                            backgroundColor: 'rgba(251, 188, 5, 0.7)'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
+                        }
+                    }
+                });
+            },
+            
+            // Utility function to calculate age from birthdate
+            calculateAge: function(birthdate) {
+                const today = new Date();
+                const birthDate = new Date(birthdate);
+                let age = today.getFullYear() - birthDate.getFullYear();
+                const monthDiff = today.getMonth() - birthDate.getMonth();
+                
+                if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+                    age--;
+                }
+                
+                return age;
+            },
+            
+            // Utility function to format date
+            formatDate: function(dateString) {
+                const date = new Date(dateString);
+                return date.toLocaleDateString('fr-FR');
+            },
+            
+            // Utility function to add days to a date
+            addDays: function(dateString, days) {
+                const date = new Date(dateString);
+                date.setDate(date.getDate() + days);
+                return date.toISOString().split('T')[0];
+            },
+            
+            // Utility function to get specialty badge
+            getSpecialtyBadge: function(specialty) {
+                const specialties = {
+                    'crawl': { text: 'Nage libre', class: 'bg-primary' },
+                    'dos': { text: 'Dos', class: 'bg-success' },
+                    'brasse': { text: 'Brasse', class: 'bg-warning' },
+                    'papillon': { text: 'Papillon', class: 'bg-info' },
+                    '4nages': { text: '4 nages', class: 'bg-dark' }
+                };
+                
+                const spec = specialties[specialty] || { text: specialty, class: 'bg-secondary' };
+                return `<span class="badge ${spec.class}">${spec.text}</span>`;
+            },
+            
+            // Utility function to get level label
+            getLevelLabel: function(level) {
+                const levels = {
+                    'debutant': 'Débutant',
+                    'perfectionnement': 'Perfectionnement',
+                    'competition': 'Compétition',
+                    'elite': 'Élite'
+                };
+                
+                return levels[level] || level;
+            },
+            
+            // Utility function to get level badge
+            getLevelBadge: function(level) {
+                const levels = {
+                    'local': { text: 'Local', class: 'bg-secondary' },
+                    'regional': { text: 'Régional', class: 'bg-warning' },
+                    'national': { text: 'National', class: 'bg-info' },
+                    'international': { text: 'International', class: 'bg-danger' }
+                };
+                
+                const lvl = levels[level] || { text: level, class: 'bg-secondary' };
+                return `<span class="badge ${lvl.class}">${lvl.text}</span>`;
+            }
+        };
+        
+        // Initialize the application when the DOM is loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            SwimApp.init();
+        });
+    </script>
+</body>
+</html>
