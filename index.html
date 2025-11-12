@@ -1719,34 +1719,143 @@
                 settings: {}
             },
             
+            // Cache for optimized rendering
+            cache: {
+                filteredSwimmers: null,
+                lastFilterParams: null,
+                chartInstances: {}
+            },
+            
+            // Auto-save configuration
+            autoSaveEnabled: true,
+            autoSaveInterval: 30000, // 30 seconds
+            autoSaveTimer: null,
+            
             // Initialize the application
             init: function() {
-                this.loadData();
-                this.setupEventListeners();
-                this.setupNavigation();
-                this.renderDashboard();
-                this.renderSwimmers();
-                this.renderGroups();
-                this.renderCompetitions();
-                this.setupCharts();
-                
-                console.log('SwimAnalytics Pro initialized successfully');
+                try {
+                    this.loadData();
+                    this.setupEventListeners();
+                    this.setupNavigation();
+                    this.renderDashboard();
+                    this.renderSwimmers();
+                    this.renderGroups();
+                    this.renderCompetitions();
+                    this.setupCharts();
+                    this.setupAutoSave();
+                    this.setupAccessibility();
+                    
+                    console.log('SwimAnalytics Pro initialized successfully');
+                } catch (error) {
+                    console.error('Error initializing application:', error);
+                    this.showToast('Erreur lors de l\'initialisation de l\'application', 'danger');
+                }
             },
             
             // Load data from localStorage
             loadData: function() {
-                const savedData = localStorage.getItem('swimAnalyticsData');
-                if (savedData) {
-                    this.data = JSON.parse(savedData);
-                } else {
-                    // Initialize with sample data
+                try {
+                    const savedData = localStorage.getItem('swimAnalyticsData');
+                    if (savedData) {
+                        this.data = JSON.parse(savedData);
+                        console.log('Data loaded successfully from localStorage');
+                    } else {
+                        // Initialize with sample data
+                        this.initializeSampleData();
+                    }
+                    
+                    // Load backup if main data is corrupted
+                } catch (error) {
+                    console.error('Error loading data:', error);
+                    this.loadBackupData();
+                }
+            },
+            
+            // Load backup data in case of corruption
+            loadBackupData: function() {
+                try {
+                    const backupData = localStorage.getItem('swimAnalyticsData_backup');
+                    if (backupData) {
+                        this.data = JSON.parse(backupData);
+                        this.showToast('Données de sauvegarde restaurées', 'warning');
+                        this.saveData(); // Restore main data
+                    } else {
+                        this.initializeSampleData();
+                        this.showToast('Données initialisées avec des exemples', 'info');
+                    }
+                } catch (error) {
+                    console.error('Error loading backup data:', error);
                     this.initializeSampleData();
+                    this.showToast('Impossible de charger les données - réinitialisation', 'danger');
                 }
             },
             
             // Save data to localStorage
             saveData: function() {
-                localStorage.setItem('swimAnalyticsData', JSON.stringify(this.data));
+                try {
+                    const dataStr = JSON.stringify(this.data);
+                    
+                    // Create backup before saving
+                    const currentData = localStorage.getItem('swimAnalyticsData');
+                    if (currentData) {
+                        localStorage.setItem('swimAnalyticsData_backup', currentData);
+                    }
+                    
+                    // Save main data
+                    localStorage.setItem('swimAnalyticsData', dataStr);
+                    console.log('Data saved successfully');
+                    
+                    // Clear cache to force refresh on next render
+                    this.clearCache();
+                } catch (error) {
+                    console.error('Error saving data:', error);
+                    this.showToast('Erreur lors de la sauvegarde des données', 'danger');
+                }
+            },
+            
+            // Setup auto-save functionality
+            setupAutoSave: function() {
+                if (this.autoSaveEnabled) {
+                    this.autoSaveTimer = setInterval(() => {
+                        this.saveData();
+                    }, this.autoSaveInterval);
+                }
+            },
+            
+            // Clear cache
+            clearCache: function() {
+                this.cache.filteredSwimmers = null;
+                this.cache.lastFilterParams = null;
+            },
+            
+            // Setup accessibility features
+            setupAccessibility: function() {
+                // Add keyboard shortcuts
+                document.addEventListener('keydown', (e) => {
+                    // Alt + D for Dashboard
+                    if (e.altKey && e.key === 'd') {
+                        e.preventDefault();
+                        document.querySelector('[data-page="dashboard"]').click();
+                    }
+                    // Alt + S for Swimmers
+                    if (e.altKey && e.key === 's') {
+                        e.preventDefault();
+                        document.querySelector('[data-page="swimmers"]').click();
+                    }
+                    // Alt + G for Groups
+                    if (e.altKey && e.key === 'g') {
+                        e.preventDefault();
+                        document.querySelector('[data-page="groups"]').click();
+                    }
+                    // Esc to close modals
+                    if (e.key === 'Escape') {
+                        const modals = document.querySelectorAll('.modal.show');
+                        modals.forEach(modal => {
+                            const bsModal = bootstrap.Modal.getInstance(modal);
+                            if (bsModal) bsModal.hide();
+                        });
+                    }
+                });
             },
             
             // Initialize with sample data
@@ -2014,54 +2123,89 @@
             
             // Render swimmers table on dashboard
             renderSwimmersTable: function() {
-                const tableBody = document.getElementById('swimmersTableBody');
-                tableBody.innerHTML = '';
+                try {
+                    const tableBody = document.getElementById('swimmersTableBody');
+                    if (!tableBody) {
+                        console.error('Swimmers table body not found');
+                        return;
+                    }
+                    
+                    tableBody.innerHTML = '';
+                    
+                    // Show loading state
+                    tableBody.innerHTML = '<tr><td colspan="7" class="text-center"><i class="fas fa-spinner fa-spin"></i> Chargement...</td></tr>';
+                    
+                    // Use setTimeout to avoid blocking UI
+                    setTimeout(() => {
+                        tableBody.innerHTML = '';
+                        
+                        if (this.data.swimmers.length === 0) {
+                            tableBody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">Aucun nageur</td></tr>';
+                            return;
+                        }
+                        
+                        this.data.swimmers.forEach(swimmer => {
+                            const row = this.createSwimmerRow(swimmer);
+                            tableBody.appendChild(row);
+                        });
+                        
+                        // Add event listeners to view buttons
+                        this.attachSwimmerEventListeners();
+                    }, 0);
+                } catch (error) {
+                    console.error('Error rendering swimmers table:', error);
+                    this.showToast('Erreur lors de l\'affichage des nageurs', 'danger');
+                }
+            },
+            
+            // Create swimmer row element (extracted for better modularity)
+            createSwimmerRow: function(swimmer) {
+                const row = document.createElement('tr');
+                const age = this.calculateAge(swimmer.birthdate);
+                const specialtyBadge = this.getSpecialtyBadge(swimmer.specialty);
+                const attendancePercent = Math.round(85 + Math.random() * 10);
+                const wellnessScore = Math.floor(4 + Math.random() * 6);
+                const wellnessClass = wellnessScore >= 7 ? 'good' : wellnessScore >= 5 ? 'average' : 'poor';
+                const loadLevel = ['Faible', 'Moyenne', 'Élevée'][Math.floor(Math.random() * 3)];
+                const loadClass = loadLevel === 'Faible' ? 'success' : loadLevel === 'Moyenne' ? 'warning' : 'danger';
                 
-                this.data.swimmers.forEach(swimmer => {
-                    const row = document.createElement('tr');
-                    
-                    // Calculate age from birthdate
-                    const age = this.calculateAge(swimmer.birthdate);
-                    
-                    // Get specialty badge color
-                    const specialtyBadge = this.getSpecialtyBadge(swimmer.specialty);
-                    
-                    row.innerHTML = `
-                        <td>
-                            <div class="d-flex align-items-center">
-                                <img src="${swimmer.avatar}" class="swimmer-avatar me-3" alt="Avatar">
-                                <div>
-                                    <h6 class="mb-0">${swimmer.firstName} ${swimmer.lastName}</h6>
-                                    <small class="text-muted">Groupe ${swimmer.group} - ${swimmer.gender === 'M' ? 'Masculin' : 'Féminin'}</small>
-                                </div>
+                row.innerHTML = `
+                    <td>
+                        <div class="d-flex align-items-center">
+                            <img src="${swimmer.avatar}" class="swimmer-avatar me-3" alt="Avatar de ${swimmer.firstName} ${swimmer.lastName}" loading="lazy">
+                            <div>
+                                <h6 class="mb-0">${swimmer.firstName} ${swimmer.lastName}</h6>
+                                <small class="text-muted">Groupe ${swimmer.group} - ${swimmer.gender === 'M' ? 'Masculin' : 'Féminin'}</small>
                             </div>
-                        </td>
-                        <td>${age}</td>
-                        <td>${specialtyBadge}</td>
-                        <td>
-                            <div class="progress" style="height: 10px;">
-                                <div class="progress-bar" role="progressbar" style="width: ${85 + Math.random() * 10}%"></div>
-                            </div>
-                            <small>${Math.round(85 + Math.random() * 10)}%</small>
-                        </td>
-                        <td>
-                            <span class="wellness-indicator wellness-${['good', 'average', 'poor'][Math.floor(Math.random() * 3)]}"></span> 
-                            ${Math.floor(4 + Math.random() * 6)}/10
-                        </td>
-                        <td>
-                            <span class="badge bg-${['success', 'warning', 'danger'][Math.floor(Math.random() * 3)]}">
-                                ${['Faible', 'Moyenne', 'Élevée'][Math.floor(Math.random() * 3)]}
-                            </span>
-                        </td>
-                        <td>
-                            <button class="btn btn-sm btn-outline-primary view-swimmer" data-id="${swimmer.id}">Voir fiche</button>
-                        </td>
-                    `;
-                    
-                    tableBody.appendChild(row);
-                });
+                        </div>
+                    </td>
+                    <td>${age}</td>
+                    <td>${specialtyBadge}</td>
+                    <td>
+                        <div class="progress" style="height: 10px;" role="progressbar" aria-valuenow="${attendancePercent}" aria-valuemin="0" aria-valuemax="100">
+                            <div class="progress-bar" style="width: ${attendancePercent}%"></div>
+                        </div>
+                        <small>${attendancePercent}%</small>
+                    </td>
+                    <td>
+                        <span class="wellness-indicator wellness-${wellnessClass}" aria-label="Bien-être ${wellnessClass === 'good' ? 'bon' : wellnessClass === 'average' ? 'moyen' : 'faible'}"></span> 
+                        ${wellnessScore}/10
+                    </td>
+                    <td>
+                        <span class="badge bg-${loadClass}">
+                            ${loadLevel}
+                        </span>
+                    </td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary view-swimmer" data-id="${swimmer.id}" aria-label="Voir la fiche de ${swimmer.firstName} ${swimmer.lastName}">Voir fiche</button>
+                    </td>
+                `;
                 
-                // Add event listeners to view buttons
+                return row;
+            },
+            
+            // Attach event listeners to swimmer buttons
+            attachSwimmerEventListeners: function() {
                 document.querySelectorAll('.view-swimmer').forEach(button => {
                     button.addEventListener('click', (e) => {
                         const swimmerId = parseInt(e.target.getAttribute('data-id'));
@@ -2072,63 +2216,31 @@
             
             // Render swimmers list on swimmers page
             renderSwimmers: function() {
-                const tableBody = document.getElementById('swimmersListBody');
-                tableBody.innerHTML = '';
-                
-                this.data.swimmers.forEach(swimmer => {
-                    const row = document.createElement('tr');
+                try {
+                    const tableBody = document.getElementById('swimmersListBody');
+                    if (!tableBody) {
+                        console.error('Swimmers list body not found');
+                        return;
+                    }
                     
-                    // Calculate age from birthdate
-                    const age = this.calculateAge(swimmer.birthdate);
+                    tableBody.innerHTML = '';
                     
-                    // Get specialty badge
-                    const specialtyBadge = this.getSpecialtyBadge(swimmer.specialty);
+                    if (this.data.swimmers.length === 0) {
+                        tableBody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">Aucun nageur</td></tr>';
+                        return;
+                    }
                     
-                    // Get status badge
-                    const statusBadge = swimmer.status === 'active' ? 
-                        '<span class="badge bg-success">Actif</span>' : 
-                        '<span class="badge bg-warning">Blessure</span>';
-                    
-                    row.innerHTML = `
-                        <td>
-                            <div class="d-flex align-items-center">
-                                <img src="${swimmer.avatar}" class="swimmer-avatar me-3" alt="Avatar">
-                                <div>
-                                    <h6 class="mb-0">${swimmer.firstName} ${swimmer.lastName}</h6>
-                                    <small class="text-muted">${swimmer.email}</small>
-                                </div>
-                            </div>
-                        </td>
-                        <td>${age}</td>
-                        <td><span class="badge bg-primary">Groupe ${swimmer.group}</span></td>
-                        <td>${specialtyBadge}</td>
-                        <td>${this.formatDate(new Date().toISOString().split('T')[0])}</td>
-                        <td>${statusBadge}</td>
-                        <td>
-                            <div class="btn-group">
-                                <button class="btn btn-sm btn-outline-primary view-swimmer" data-id="${swimmer.id}">Voir</button>
-                                <button class="btn btn-sm btn-outline-secondary edit-swimmer" data-id="${swimmer.id}">Éditer</button>
-                            </div>
-                        </td>
-                    `;
-                    
-                    tableBody.appendChild(row);
-                });
-                
-                // Add event listeners
-                document.querySelectorAll('.view-swimmer').forEach(button => {
-                    button.addEventListener('click', (e) => {
-                        const swimmerId = parseInt(e.target.getAttribute('data-id'));
-                        this.viewSwimmer(swimmerId);
+                    this.data.swimmers.forEach(swimmer => {
+                        const row = this.createSwimmerListRow(swimmer);
+                        tableBody.appendChild(row);
                     });
-                });
-                
-                document.querySelectorAll('.edit-swimmer').forEach(button => {
-                    button.addEventListener('click', (e) => {
-                        const swimmerId = parseInt(e.target.getAttribute('data-id'));
-                        this.editSwimmer(swimmerId);
-                    });
-                });
+                    
+                    // Add event listeners
+                    this.attachSwimmerListEventListeners();
+                } catch (error) {
+                    console.error('Error rendering swimmers:', error);
+                    this.showToast('Erreur lors de l\'affichage des nageurs', 'danger');
+                }
             },
             
             // Render groups on groups page
@@ -2243,79 +2355,115 @@
             
             // Save a new swimmer
             saveSwimmer: function() {
-                const form = document.getElementById('addSwimmerForm');
-                if (!form.checkValidity()) {
-                    form.reportValidity();
-                    return;
+                try {
+                    const form = document.getElementById('addSwimmerForm');
+                    if (!form.checkValidity()) {
+                        form.reportValidity();
+                        return;
+                    }
+                    
+                    // Validate email format
+                    const email = document.getElementById('swimmerEmail').value;
+                    if (email && !this.validateEmail(email)) {
+                        this.showToast('Format d\'email invalide', 'warning');
+                        return;
+                    }
+                    
+                    // Validate phone format
+                    const phone = document.getElementById('swimmerPhone').value;
+                    if (phone && !this.validatePhone(phone)) {
+                        this.showToast('Format de téléphone invalide', 'warning');
+                        return;
+                    }
+                    
+                    const newSwimmer = {
+                        id: this.data.swimmers.length > 0 ? Math.max(...this.data.swimmers.map(s => s.id)) + 1 : 1,
+                        firstName: document.getElementById('swimmerFirstName').value.trim(),
+                        lastName: document.getElementById('swimmerLastName').value.trim(),
+                        birthdate: document.getElementById('swimmerBirthdate').value,
+                        gender: document.getElementById('swimmerGender').value,
+                        group: document.getElementById('swimmerGroup').value,
+                        specialty: document.getElementById('swimmerSpecialty').value,
+                        email: email,
+                        phone: phone,
+                        address: document.getElementById('swimmerAddress').value.trim(),
+                        avatar: `https://i.pravatar.cc/150?img=${Math.floor(Math.random() * 70) + 1}`,
+                        status: 'active',
+                        joinDate: new Date().toISOString().split('T')[0]
+                    };
+                    
+                    this.data.swimmers.push(newSwimmer);
+                    this.saveData();
+                    
+                    // Close modal
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('addSwimmerModal'));
+                    modal.hide();
+                    
+                    // Reset form
+                    form.reset();
+                    
+                    // Update UI
+                    this.renderDashboard();
+                    this.renderSwimmers();
+                    
+                    // Show success message
+                    this.showToast(`${newSwimmer.firstName} ${newSwimmer.lastName} ajouté avec succès`, 'success');
+                } catch (error) {
+                    console.error('Error saving swimmer:', error);
+                    this.showToast('Erreur lors de l\'ajout du nageur', 'danger');
                 }
-                
-                const newSwimmer = {
-                    id: this.data.swimmers.length > 0 ? Math.max(...this.data.swimmers.map(s => s.id)) + 1 : 1,
-                    firstName: document.getElementById('swimmerFirstName').value,
-                    lastName: document.getElementById('swimmerLastName').value,
-                    birthdate: document.getElementById('swimmerBirthdate').value,
-                    gender: document.getElementById('swimmerGender').value,
-                    group: document.getElementById('swimmerGroup').value,
-                    specialty: document.getElementById('swimmerSpecialty').value,
-                    email: document.getElementById('swimmerEmail').value,
-                    phone: document.getElementById('swimmerPhone').value,
-                    address: document.getElementById('swimmerAddress').value,
-                    avatar: `https://i.pravatar.cc/150?img=${Math.floor(Math.random() * 70) + 1}`,
-                    status: 'active',
-                    joinDate: new Date().toISOString().split('T')[0]
-                };
-                
-                this.data.swimmers.push(newSwimmer);
-                this.saveData();
-                
-                // Close modal
-                const modal = bootstrap.Modal.getInstance(document.getElementById('addSwimmerModal'));
-                modal.hide();
-                
-                // Reset form
-                form.reset();
-                
-                // Update UI
-                this.renderDashboard();
-                this.renderSwimmers();
-                
-                // Show success message
-                this.showToast('Nageur ajouté avec succès', 'success');
+            },
+            
+            // Validate email format
+            validateEmail: function(email) {
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                return emailRegex.test(email);
+            },
+            
+            // Validate phone format
+            validatePhone: function(phone) {
+                const phoneRegex = /^[\d\s\-\+\(\)]{8,}$/;
+                return phoneRegex.test(phone);
             },
             
             // Save a new group
             saveGroup: function() {
-                const form = document.getElementById('addGroupForm');
-                if (!form.checkValidity()) {
-                    form.reportValidity();
-                    return;
+                try {
+                    const form = document.getElementById('addGroupForm');
+                    if (!form.checkValidity()) {
+                        form.reportValidity();
+                        return;
+                    }
+                    
+                    const newGroup = {
+                        id: String.fromCharCode(65 + this.data.groups.length), // A, B, C, ...
+                        name: document.getElementById('groupName').value.trim(),
+                        coach: document.getElementById('groupCoach').value.trim(),
+                        level: document.getElementById('groupLevel').value,
+                        schedule: document.getElementById('groupSchedule').value.trim(),
+                        objectives: document.getElementById('groupObjectives').value.trim(),
+                        swimmersCount: 0
+                    };
+                    
+                    this.data.groups.push(newGroup);
+                    this.saveData();
+                    
+                    // Close modal
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('addGroupModal'));
+                    modal.hide();
+                    
+                    // Reset form
+                    form.reset();
+                    
+                    // Update UI
+                    this.renderGroups();
+                    
+                    // Show success message
+                    this.showToast(`${newGroup.name} ajouté avec succès`, 'success');
+                } catch (error) {
+                    console.error('Error saving group:', error);
+                    this.showToast('Erreur lors de l\'ajout du groupe', 'danger');
                 }
-                
-                const newGroup = {
-                    id: String.fromCharCode(65 + this.data.groups.length), // A, B, C, ...
-                    name: document.getElementById('groupName').value,
-                    coach: document.getElementById('groupCoach').value,
-                    level: document.getElementById('groupLevel').value,
-                    schedule: document.getElementById('groupSchedule').value,
-                    objectives: document.getElementById('groupObjectives').value,
-                    swimmersCount: 0
-                };
-                
-                this.data.groups.push(newGroup);
-                this.saveData();
-                
-                // Close modal
-                const modal = bootstrap.Modal.getInstance(document.getElementById('addGroupModal'));
-                modal.hide();
-                
-                // Reset form
-                form.reset();
-                
-                // Update UI
-                this.renderGroups();
-                
-                // Show success message
-                this.showToast('Groupe ajouté avec succès', 'success');
             },
             
             // Save a new competition
@@ -2413,11 +2561,100 @@
             
             // Search swimmers
             searchSwimmers: function() {
-                const query = document.getElementById('searchSwimmer').value.toLowerCase();
-                // In a real app, this would filter the displayed data
-                if (query) {
-                    this.showToast(`Recherche: ${query}`, 'info');
+                try {
+                    const query = document.getElementById('searchSwimmer').value.toLowerCase().trim();
+                    const tableBody = document.getElementById('swimmersListBody');
+                    
+                    if (!tableBody) return;
+                    
+                    // Use debouncing for better performance
+                    clearTimeout(this.searchTimeout);
+                    this.searchTimeout = setTimeout(() => {
+                        tableBody.innerHTML = '<tr><td colspan="7" class="text-center"><i class="fas fa-spinner fa-spin"></i> Recherche...</td></tr>';
+                        
+                        setTimeout(() => {
+                            let filteredSwimmers = this.data.swimmers;
+                            
+                            if (query) {
+                                filteredSwimmers = this.data.swimmers.filter(s => 
+                                    s.firstName.toLowerCase().includes(query) ||
+                                    s.lastName.toLowerCase().includes(query) ||
+                                    s.email.toLowerCase().includes(query)
+                                );
+                            }
+                            
+                            tableBody.innerHTML = '';
+                            
+                            if (filteredSwimmers.length === 0) {
+                                tableBody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">Aucun résultat trouvé</td></tr>';
+                                return;
+                            }
+                            
+                            filteredSwimmers.forEach(swimmer => {
+                                const row = this.createSwimmerListRow(swimmer);
+                                tableBody.appendChild(row);
+                            });
+                            
+                            // Attach event listeners
+                            this.attachSwimmerListEventListeners();
+                        }, 100);
+                    }, 300); // 300ms debounce
+                } catch (error) {
+                    console.error('Error searching swimmers:', error);
+                    this.showToast('Erreur lors de la recherche', 'danger');
                 }
+            },
+            
+            // Create swimmer list row (for swimmers page)
+            createSwimmerListRow: function(swimmer) {
+                const row = document.createElement('tr');
+                const age = this.calculateAge(swimmer.birthdate);
+                const specialtyBadge = this.getSpecialtyBadge(swimmer.specialty);
+                const statusBadge = swimmer.status === 'active' ? 
+                    '<span class="badge bg-success">Actif</span>' : 
+                    '<span class="badge bg-warning">Blessure</span>';
+                
+                row.innerHTML = `
+                    <td>
+                        <div class="d-flex align-items-center">
+                            <img src="${swimmer.avatar}" class="swimmer-avatar me-3" alt="Avatar de ${swimmer.firstName} ${swimmer.lastName}" loading="lazy">
+                            <div>
+                                <h6 class="mb-0">${swimmer.firstName} ${swimmer.lastName}</h6>
+                                <small class="text-muted">${swimmer.email}</small>
+                            </div>
+                        </div>
+                    </td>
+                    <td>${age}</td>
+                    <td><span class="badge bg-primary">Groupe ${swimmer.group}</span></td>
+                    <td>${specialtyBadge}</td>
+                    <td>${this.formatDate(new Date().toISOString().split('T')[0])}</td>
+                    <td>${statusBadge}</td>
+                    <td>
+                        <div class="btn-group">
+                            <button class="btn btn-sm btn-outline-primary view-swimmer-list" data-id="${swimmer.id}" aria-label="Voir ${swimmer.firstName} ${swimmer.lastName}">Voir</button>
+                            <button class="btn btn-sm btn-outline-secondary edit-swimmer-list" data-id="${swimmer.id}" aria-label="Éditer ${swimmer.firstName} ${swimmer.lastName}">Éditer</button>
+                        </div>
+                    </td>
+                `;
+                
+                return row;
+            },
+            
+            // Attach event listeners to swimmer list buttons
+            attachSwimmerListEventListeners: function() {
+                document.querySelectorAll('.view-swimmer-list').forEach(button => {
+                    button.addEventListener('click', (e) => {
+                        const swimmerId = parseInt(e.target.getAttribute('data-id'));
+                        this.viewSwimmer(swimmerId);
+                    });
+                });
+                
+                document.querySelectorAll('.edit-swimmer-list').forEach(button => {
+                    button.addEventListener('click', (e) => {
+                        const swimmerId = parseInt(e.target.getAttribute('data-id'));
+                        this.editSwimmer(swimmerId);
+                    });
+                });
             },
             
             // Export data
@@ -2498,16 +2735,31 @@
             
             // Setup charts
             setupCharts: function() {
-                this.setupTrainingVolumeChart();
-                this.setupGroupAverageChart();
-                this.setupGroupsComparisonChart();
-                // Add other charts as needed
+                try {
+                    // Destroy existing chart instances to prevent memory leaks
+                    Object.values(this.cache.chartInstances).forEach(chart => {
+                        if (chart) chart.destroy();
+                    });
+                    this.cache.chartInstances = {};
+                    
+                    // Setup charts with error handling
+                    this.setupTrainingVolumeChart();
+                    this.setupGroupAverageChart();
+                    this.setupGroupsComparisonChart();
+                } catch (error) {
+                    console.error('Error setting up charts:', error);
+                    this.showToast('Erreur lors de l\'initialisation des graphiques', 'warning');
+                }
             },
             
             // Training Volume Chart
             setupTrainingVolumeChart: function() {
-                const ctx = document.getElementById('trainingVolumeChart').getContext('2d');
-                new Chart(ctx, {
+                try {
+                    const canvas = document.getElementById('trainingVolumeChart');
+                    if (!canvas) return;
+                    
+                    const ctx = canvas.getContext('2d');
+                    this.cache.chartInstances.trainingVolume = new Chart(ctx, {
                     type: 'bar',
                     data: {
                         labels: ['Sem 1', 'Sem 2', 'Sem 3', 'Sem 4', 'Sem 5', 'Sem 6'],
@@ -2554,12 +2806,19 @@
                         }
                     }
                 });
+                } catch (error) {
+                    console.error('Error creating training volume chart:', error);
+                }
             },
             
             // Group Average Chart
             setupGroupAverageChart: function() {
-                const ctx = document.getElementById('groupAverageChart').getContext('2d');
-                new Chart(ctx, {
+                try {
+                    const canvas = document.getElementById('groupAverageChart');
+                    if (!canvas) return;
+                    
+                    const ctx = canvas.getContext('2d');
+                this.cache.chartInstances.groupAverage = new Chart(ctx, {
                     type: 'line',
                     data: {
                         labels: ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin'],
@@ -2600,12 +2859,19 @@
                         }
                     }
                 });
+                } catch (error) {
+                    console.error('Error creating group average chart:', error);
+                }
             },
             
             // Groups Comparison Chart
             setupGroupsComparisonChart: function() {
-                const ctx = document.getElementById('groupsComparisonChart').getContext('2d');
-                new Chart(ctx, {
+                try {
+                    const canvas = document.getElementById('groupsComparisonChart');
+                    if (!canvas) return;
+                    
+                    const ctx = canvas.getContext('2d');
+                this.cache.chartInstances.groupsComparison = new Chart(ctx, {
                     type: 'bar',
                     data: {
                         labels: ['Volume (h)', 'Charge (AU)', 'Performance', 'Présence (%)'],
@@ -2633,6 +2899,9 @@
                         }
                     }
                 });
+                } catch (error) {
+                    console.error('Error creating groups comparison chart:', error);
+                }
             },
             
             // Utility function to calculate age from birthdate
